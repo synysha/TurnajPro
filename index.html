@@ -196,9 +196,9 @@ html,body{touch-action:pan-x pan-y;-webkit-text-size-adjust:100%}
                         </div>
                         <h1 class="mt-0.5 flex items-center gap-1.5"><input id="tName" onchange="renameTournament(this.value)" maxlength="40" class="bg-transparent text-white text-xl font-bold tracking-tight outline-none min-w-0 w-52"><span class="text-[#8E8E93] text-sm">✎</span></h1>
                     </div>
-                    <button onclick="switchMainTab('format')" class="w-9 h-9 rounded-full surface-card flex items-center justify-center text-white/80 hover:text-white" title="Upraviť formát">
+                    <div class="flex gap-2"><button id="lockBtn" onclick="toggleLock()" class="w-9 h-9 rounded-full surface-card flex items-center justify-center text-sm" title="Ukončiť a zamknúť">🔓</button><button onclick="switchMainTab('format')" class="w-9 h-9 rounded-full surface-card flex items-center justify-center text-white/80 hover:text-white" title="Upraviť formát">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"/></svg>
-                    </button>
+                    </button></div>
                 </div>
 
                 <!-- Quick Format Switcher Pill Bar -->
@@ -214,6 +214,8 @@ html,body{touch-action:pan-x pan-y;-webkit-text-size-adjust:100%}
                     </button>
                 </div>
 
+                <div id="lockBar"></div>
+<div id="grpBar" class="space-y-1.5"></div>
                 <!-- Segmented Sub-navigation (Zápasy / Tabuľka / Pavúk) -->
                 <div class="grid grid-cols-4 p-1 rounded-xl bg-[#18181B] border border-white/10">
                     <button onclick="setSubTab('matches')" id="subtab-matches" class="py-1.5 text-xs font-semibold rounded-lg bg-[#27272C] text-white shadow-sm transition">
@@ -443,6 +445,7 @@ html,body{touch-action:pan-x pan-y;-webkit-text-size-adjust:100%}
                 </div>
 
                 <div class="surface-card rounded-2xl p-3.5 flex items-center justify-between"><div><div class="text-xs font-semibold text-white">Počet skupín</div><div class="text-[10px] text-[#8E8E93]">Pre formát Skupiny + Play-off</div></div><select id="groupsSelect" onchange="applyRules()" class="bg-[#27272C] text-white text-xs font-bold px-2.5 py-1.5 rounded-lg border border-white/10 outline-none"><option>1</option><option>2</option><option>3</option><option>4</option></select></div>
+<div class="surface-card rounded-2xl p-3.5 flex items-center justify-between gap-3"><div><div class="text-xs font-semibold text-white">Heslo na odomknutie</div><div class="text-[10px] text-[#8E8E93]">Chráni ukončené turnaje pred prepisovaním</div></div><button onclick="openPw('settings')" class="px-3 py-1.5 rounded-xl bg-[#27272C] text-white text-xs font-bold"><span id="pwBtnLbl">Nastaviť</span></button></div>
 <div class="surface-card rounded-2xl p-3.5 grid grid-cols-2 gap-2.5"><button onclick="resetData(0)" class="py-2 rounded-xl bg-[#27272C] text-white text-xs font-semibold">Vzorové dáta</button><button onclick="resetData(1)" class="py-2 rounded-xl bg-[#27272C] text-rose-400 text-xs font-semibold">Vymazať všetko</button></div>
 <!-- Instant Schedule Recalculation Preview -->
                 <div class="surface-card rounded-2xl p-3.5 bg-gradient-to-r from-[#18181B] to-[#1a221f] border-emerald-500/25">
@@ -577,6 +580,11 @@ html,body{touch-action:pan-x pan-y;-webkit-text-size-adjust:100%}
 <p class="text-[10px] text-[#8E8E93]">Hráči sa skopírujú z posledného turnaja (bez tímov a štatistík).</p>
 <button onclick="confirmNewTournament()" class="w-full py-2.5 rounded-xl bg-emerald-500 text-black font-bold text-xs">Vytvoriť turnaj</button>
 </div></div>
+<div id="pwBackdrop" class="modal-backdrop hidden opacity-0 absolute inset-0 bg-black/75 z-30 flex items-end" onclick="closePw()">
+<div id="pwSheet" class="modal-sheet translate-y-full w-full bg-[#161619] border-t border-white/15 rounded-t-3xl p-5 pb-8 space-y-3" onclick="event.stopPropagation()">
+<div class="w-10 h-1 bg-white/20 rounded-full mx-auto -mt-1"></div>
+<div id="pwBody" class="space-y-3"></div>
+</div></div>
 <!-- BOTTOM NAVIGATION BAR -->
         <div class="absolute bottom-0 left-0 right-0 bg-[#0D0D0F]/95 backdrop-blur-md hairline-t pt-2 pb-5 px-3 z-20">
             <div class="grid grid-cols-3 gap-1">
@@ -626,7 +634,6 @@ const toast=showToast;
 
 function switchMainTab(tab,keep){if(inList&&tab!=='tournaments')return toast('Najprv otvor turnaj');S.tab=tab;$('screen-list').classList.toggle('hidden',!(inList&&tab==='tournaments'));['tournaments','generator','format'].forEach(s=>{$('screen-'+s).classList.toggle('hidden',s!==tab||(s==='tournaments'&&inList));const b=$('nav-'+s),on=s===tab;b.classList.toggle('text-white',on);b.classList.toggle('text-[#8E8E93]',!on);b.querySelector('span').classList.toggle('font-semibold',on)});if(!keep)$('mainViewport').scrollTop=0;save()}
 function setSubTab(sub){S.sub=sub;['matches','table','bracket','stats'].forEach(t=>{$('subview-'+t).classList.toggle('hidden',t!==sub);$('subtab-'+t).className='py-1.5 text-xs rounded-lg transition '+(t===sub?'font-semibold bg-[#27272C] text-white shadow-sm':'font-medium text-[#8E8E93]')});save()}
-function setTournamentFormat(f){S.fmt=f;S.teams.length?createSchedule():renderAll();toast('Prepnuté na: '+f)}
 
 function generateBalancedTeams(notify=true){const k=S.nt,P=S.players;
  if(P.length<k)return toast('Pridaj aspoň '+k+' hráčov');
@@ -716,10 +723,10 @@ const curT=()=>G.list.find(x=>x.id===G.cur);
 function tInfo(d){const m=d.m||[],real=m.filter(x=>x.st!=='BYE'),fin=real.filter(x=>x.st==='FIN').length;let champ=null;
  if(d.ko){const f=m.find(x=>x.ko&&x.r==Math.log2(d.ko.size)-1),w=win(f);if(w!=null&&d.teams[w])champ=d.teams[w].name}
  const done=champ!=null||(real.length&&fin===real.length&&d.fmt==='Každý s každým');
- return{tot:real.length,fin,champ,s:done?'d':(fin||real.some(x=>x.st==='LIVE'))?'p':'n'}}
+ return{tot:real.length,fin,champ,s:(done||d.locked)?'d':(fin||real.some(x=>x.st==='LIVE'))?'p':'n'}}
 function renderList(){const ST={n:['Nezačatý','text-[#8E8E93] bg-white/5'],p:['Prebieha','text-emerald-400 bg-emerald-500/15'],d:['Ukončený','text-amber-400 bg-amber-500/15']};
- $('screen-list').innerHTML=`<div><span class="text-[11px] uppercase tracking-widest text-[#8E8E93] font-semibold">Správa turnajov</span><h1 class="text-white text-xl font-bold tracking-tight mt-0.5">Turnaje</h1></div><button onclick="newTournament()" class="w-full py-3 rounded-2xl bg-emerald-500 text-black font-bold text-sm active:scale-[0.99] transition shadow-lg shadow-emerald-500/15">+ Nový turnaj</button><div class="text-[11px] uppercase tracking-widest text-[#8E8E93] font-semibold px-0.5 pt-1">História turnajov (${G.list.length})</div>`+(G.list.length?G.list.map(t=>{const d=t.data,i=tInfo(d),[lb,cl]=ST[i.s];
-  return `<div onclick="openTournament('${t.id}')" class="surface-card surface-card-hover rounded-2xl p-3.5 cursor-pointer transition"><div class="flex items-start justify-between gap-2"><div class="min-w-0"><div class="text-sm font-bold text-white truncate">${esc(t.name)}</div><div class="text-[11px] text-[#8E8E93] mt-0.5">${new Date(t.created).toLocaleDateString('sk-SK')} • ${esc(d.fmt)}</div></div><button onclick="event.stopPropagation();delTournament('${t.id}')" class="w-7 h-7 shrink-0 rounded-lg bg-[#25252B] text-rose-400 font-bold text-xs active:scale-90">✕</button></div><div class="flex items-center justify-between mt-2.5 pt-2.5 hairline-t"><span class="text-[11px] text-[#8E8E93]">${d.teams.length} tímov • ${i.fin}/${i.tot} zápasov${i.champ?' • 🏆 '+esc(i.champ):''}</span><span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${cl}">${lb}</span></div></div>`}).join(''):note('Zatiaľ žiadny turnaj. Vytvor prvý tlačidlom hore.'))}
+ $('screen-list').innerHTML=`<div class="flex items-center justify-between"><div><span class="text-[11px] uppercase tracking-widest text-[#8E8E93] font-semibold">Správa turnajov</span><h1 class="text-white text-xl font-bold tracking-tight mt-0.5">Turnaje</h1></div><button onclick="openPw('settings')" class="px-3 py-1.5 rounded-full surface-card text-xs font-semibold text-white">🔑 Heslo</button></div><button onclick="newTournament()" class="w-full py-3 rounded-2xl bg-emerald-500 text-black font-bold text-sm active:scale-[0.99] transition shadow-lg shadow-emerald-500/15">+ Nový turnaj</button><div class="text-[11px] uppercase tracking-widest text-[#8E8E93] font-semibold px-0.5 pt-1">História turnajov (${G.list.length})</div>`+(G.list.length?G.list.map(t=>{const d=t.data,i=tInfo(d),[lb,cl]=ST[i.s];
+  return `<div onclick="openTournament('${t.id}')" class="surface-card surface-card-hover rounded-2xl p-3.5 cursor-pointer transition"><div class="flex items-start justify-between gap-2"><div class="min-w-0"><div class="text-sm font-bold text-white truncate">${d.locked?'🔒 ':''}${esc(t.name)}</div><div class="text-[11px] text-[#8E8E93] mt-0.5">${new Date(t.created).toLocaleDateString('sk-SK')} • ${esc(d.fmt)}</div></div><button onclick="event.stopPropagation();delTournament('${t.id}')" class="w-7 h-7 shrink-0 rounded-lg bg-[#25252B] text-rose-400 font-bold text-xs active:scale-90">✕</button></div><div class="flex items-center justify-between mt-2.5 pt-2.5 hairline-t"><span class="text-[11px] text-[#8E8E93]">${d.teams.length} tímov • ${i.fin}/${i.tot} zápasov${i.champ?' • 🏆 '+esc(i.champ):''}</span><span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${cl}">${lb}</span></div></div>`}).join(''):note('Zatiaľ žiadny turnaj. Vytvor prvý tlačidlom hore.'))}
 function renderHeader(){const t=curT();$('tName').value=t?t.name:''}
 function openTournament(id){const t=G.list.find(x=>x.id===id);if(!t)return;save();G.cur=id;S=t.data;inList=false;switchMainTab('tournaments');setSubTab(S.sub||'matches');renderAll()}
 function closeTournament(){save();inList=true;switchMainTab('tournaments');renderAll()}
@@ -730,7 +737,7 @@ function confirmNewTournament(){const f=fresh();if(G.cur)f.players=S.players.map
  f.gtab='teams';const t={id:'t'+Date.now(),name:$('newTName').value.trim().slice(0,40)||'Nový turnaj',created:Date.now(),data:f};
  save();G.list.unshift(t);closeNewT();openTournament(t.id);toast('Turnaj vytvorený')}
 let pend=null;
-function delTournament(id){if(pend!==id){pend=id;toast('Klikni znova pre zmazanie turnaja');setTimeout(()=>{if(pend===id)pend=null},3000);return}
+function delTournament(id){const tt=G.list.find(x=>x.id===id);if(tt&&tt.data.locked)return toast('Zamknutý turnaj sa nedá zmazať – najprv ho odomkni');if(pend!==id){pend=id;toast('Klikni znova pre zmazanie turnaja');setTimeout(()=>{if(pend===id)pend=null},3000);return}
  pend=null;G.list=G.list.filter(t=>t.id!==id);if(G.cur===id){G.cur=null;S=fresh()}save();renderList();toast('Turnaj zmazaný')}
 const pById=id=>S.players.find(p=>p.id===id);
 function delPlayer(id){S.players=S.players.filter(p=>p.id!==id);renderAll()}
@@ -768,7 +775,19 @@ function confirmAddPlayer(){const el=$('newPlayerName'),name=el.value.trim();if(
 function setMatchDuration(m){S.rules.dur=m;renderAll()}
 function adjustRule(k,d){S.rules[k]=Math.max(0,Math.min(5,S.rules[k]+d));renderAll();toast('Bodovanie aktualizované')}
 function togglePenalties(){S.rules.pen=!S.rules.pen;renderAll()}
-function applyRules(){S.rules.adv=+$('advancingSelect').value;S.rules.groups=+$('groupsSelect').value;S.teams.length?createSchedule():renderAll();toast('Rozpis prepočítaný')}
+let gpend=null;
+const touched=()=>S.m.some(m=>m.st!=='UP'&&m.st!=='BYE');
+function guarded(key,fn,blk){if(touched()&&gpend!==key){gpend=key;toast('Zmena zmaže výsledky – klikni znova');setTimeout(()=>{if(gpend===key)gpend=null},3000);if(blk)blk();return}gpend=null;fn()}
+function setTournamentFormat(f){guarded('f'+f,()=>{S.fmt=f;S.teams.length?createSchedule():renderAll();toast('Prepnuté na: '+f)})}
+function setGroups(v){if(S.teams.length&&v>S.teams.length>>1)return toast('Na '+v+' skupín treba aspoň '+2*v+' tímov');guarded('g'+v,()=>{S.rules.groups=v;S.teams.length?createSchedule():renderAll();toast('Rozpis prepočítaný')})}
+function setAdv(v){guarded('a'+v,()=>{S.rules.adv=v;S.teams.length?createSchedule():renderAll();toast('Rozpis prepočítaný')})}
+function applyRules(){const a=+$('advancingSelect').value,g=+$('groupsSelect').value;
+ if(S.teams.length&&g>S.teams.length>>1){toast('Na '+g+' skupín treba aspoň '+2*g+' tímov');return renderRules()}
+ guarded('r'+a+'-'+g,()=>{S.rules.adv=a;S.rules.groups=g;S.teams.length?createSchedule():renderAll();toast('Rozpis prepočítaný')},renderRules)}
+function renderGrp(){const el=$('grpBar');if(S.fmt!=='Skupiny + Play-off'){el.innerHTML='';return}
+ const T=S.teams.length,mx=T?Math.max(1,T>>1):4,eg=S.groups.length||Math.min(S.rules.groups,mx),
+ chip=(v,on,dis,fn)=>`<button onclick="${fn}(${v})" class="w-8 h-7 rounded-lg text-xs font-bold ${on?'bg-emerald-500 text-black':'bg-[#27272C] text-[#8E8E93]'} ${dis?'opacity-30':''}">${v}</button>`;
+ el.innerHTML=`<div class="surface-card rounded-xl px-3 py-2 flex items-center justify-between"><span class="text-[11px] font-medium text-white">Počet skupín</span><div class="flex gap-1.5">${[1,2,3,4].map(v=>chip(v,v===eg,v>mx,'setGroups')).join('')}</div></div><div class="surface-card rounded-xl px-3 py-2 flex items-center justify-between"><span class="text-[11px] font-medium text-white">Postupuje zo skupiny</span><div class="flex gap-1.5">${[1,2,3,4].map(v=>chip(v,v===S.rules.adv,0,'setAdv')).join('')}</div></div>`}
 function resetData(empty){const f=fresh();if(empty)f.players=[];S=f;if(!empty){generateBalancedTeams(false);createSchedule()}renderAll();toast(empty?'Všetky dáta vymazané':'Načítané vzorové dáta')}
 function renderRules(){const r=S.rules;$('durationDisplay').textContent=r.dur+' minút';
  document.querySelectorAll('.dur-btn').forEach(b=>b.className='dur-btn py-2 rounded-xl text-xs '+(+b.dataset.dur===r.dur?'font-bold bg-white text-black':'font-semibold bg-[#27272C] text-[#8E8E93]'));
@@ -779,7 +798,33 @@ function renderRules(){const r=S.rules;$('durationDisplay').textContent=r.dur+' 
  $('previewTotalMatches').textContent=tot;$('previewTotalTime').textContent=tot?(min/60|0)+'h '+min%60+'m':'-';
  $('previewEndTime').textContent=tot?String(e/60|0).padStart(2,'0')+':'+String(e%60).padStart(2,'0'):'-'}
 
-function renderAll(){sync();save();renderMatches();renderTables();renderBracket();renderGen();renderPlayers();renderDraft();renderGenTab();renderList();renderHeader();renderStats();renderRules()}
+function renderAll(){sync();save();renderMatches();renderTables();renderBracket();renderGen();renderPlayers();renderDraft();renderGenTab();renderList();renderHeader();renderGrp();renderLock();renderStats();renderRules()}
+const h53=s=>{let h1=0xdeadbeef,h2=0x41c6ce57;for(let i=0,c;i<s.length;i++){c=s.charCodeAt(i);h1=Math.imul(h1^c,2654435761);h2=Math.imul(h2^c,1597334677)}h1=Math.imul(h1^(h1>>>16),2246822507)^Math.imul(h2^(h2>>>13),3266489909);h2=Math.imul(h2^(h2>>>16),2246822507)^Math.imul(h1^(h1>>>13),3266489909);return(4294967296*(2097151&h2)+(h1>>>0)).toString(36)};
+const pwh=p=>h53('turnajpro|'+p);
+let pwMode='set',lpend=null;
+function renderPw(){const hint='<p class="text-[10px] text-[#8E8E93]">Heslo chráni ukončené turnaje pred prepisovaním. Ak ho zabudneš, zamknutý turnaj sa nedá odomknúť. Je to ochrana pred nechceným zásahom, nie bezpečnostné šifrovanie dát.</p>',
+ I=(id,ph)=>`<input id="${id}" type="password" autocomplete="off" placeholder="${ph}" class="w-full bg-[#222227] text-white text-xs px-3 py-2.5 rounded-xl border border-white/10 outline-none focus:border-emerald-500">`,
+ head=t=>`<div class="flex items-center justify-between"><h3 class="text-sm font-bold text-white">${t}</h3><button onclick="closePw()" class="text-xs text-[#8E8E93]">Zrušiť</button></div>`,
+ B=(fn,l)=>`<button onclick="${fn}()" class="w-full py-2.5 rounded-xl bg-emerald-500 text-black font-bold text-xs">${l}</button>`;
+ $('pwBody').innerHTML=pwMode==='unlock'?head('Odomknúť turnaj')+I('pwIn','Heslo')+B('doUnlock','Odomknúť'):head(G.pw?'Zmeniť heslo':'Nastaviť heslo')+(G.pw?I('pwOld','Aktuálne heslo'):'')+I('pwNew',G.pw?'Nové heslo (prázdne = zrušiť heslo)':'Nové heslo (aspoň 4 znaky)')+I('pwNew2','Nové heslo znova')+B('savePw',G.pw?'Uložiť zmenu':'Nastaviť heslo')+hint}
+function openPw(m){pwMode=m;renderPw();sheet('pwBackdrop','pwSheet',1)}
+function closePw(){sheet('pwBackdrop','pwSheet',0)}
+function savePw(){const o=G.pw?$('pwOld').value:'',n=$('pwNew').value,n2=$('pwNew2').value;
+ if(G.pw&&pwh(o)!==G.pw)return toast('Nesprávne aktuálne heslo');
+ if(n!==n2)return toast('Heslá sa nezhodujú');
+ if(!n&&!G.pw)return toast('Zadaj nové heslo');
+ if(n&&n.length<4)return toast('Heslo má mať aspoň 4 znaky');
+ G.pw=n?pwh(n):null;save();closePw();renderAll();toast(n?'Heslo uložené':'Heslo zrušené')}
+function lockTournament(){if(S.locked)return;if(lpend!=='l'){lpend='l';toast('Klikni znova: turnaj sa ukončí a zamkne');setTimeout(()=>{lpend=null},3000);return}
+ lpend=null;S.locked=true;S.lockedAt=Date.now();renderAll();toast(G.pw?'Turnaj ukončený a zamknutý 🔒':'Zamknuté 🔒 Nastav heslo, inak sa dá odomknúť bez hesla')}
+function unlockTournament(){if(!S.locked)return;if(!G.pw){S.locked=false;S.lockedAt=null;renderAll();return toast('Turnaj odomknutý 🔓')}openPw('unlock')}
+function doUnlock(){if(pwh($('pwIn').value)!==G.pw)return toast('Nesprávne heslo');S.locked=false;S.lockedAt=null;closePw();renderAll();toast('Turnaj odomknutý 🔓')}
+function toggleLock(){S.locked?unlockTournament():lockTournament()}
+function renderLock(){const L=!!S.locked,i=tInfo(S);
+ $('lockBtn').textContent=L?'🔒':'🔓';$('lockBtn').className='w-9 h-9 rounded-full flex items-center justify-center text-sm '+(L?'bg-amber-500/20 border border-amber-400/40':'surface-card');
+ $('lockBar').innerHTML=L?`<div class="surface-card rounded-xl px-3 py-2.5 flex items-center justify-between gap-2 border-amber-400/30"><span class="text-[11px] text-amber-400 font-semibold">🔒 Turnaj je ukončený a zamknutý (len na čítanie)</span><button onclick="unlockTournament()" class="px-2.5 py-1 rounded-lg bg-[#27272C] text-white text-[11px] font-bold shrink-0">Odomknúť</button></div>`:i.s==='d'?`<div class="surface-card rounded-xl px-3 py-2.5 flex items-center justify-between gap-2 border-emerald-500/30"><span class="text-[11px] text-emerald-400 font-semibold">🏆 Turnaj je odohraný</span><button onclick="lockTournament()" class="px-2.5 py-1 rounded-lg bg-emerald-500 text-black text-[11px] font-bold shrink-0">Ukončiť a zamknúť</button></div>`:'';
+ $('tName').readOnly=L;$('pwBtnLbl').textContent=G.pw?'Zmeniť':'Nastaviť'}
+['setTournamentFormat','setGroups','setAdv','applyRules','generateBalancedTeams','setGenTeamCount','renameTeam','createScheduleFromTeams','openMatchModal','addGoalToMatch','assignCardToSelected','toggleFinish','openAddPlayerModal','confirmAddPlayer','delPlayer','setPTeam','setRating','adjustPlayerStat','setMatchDuration','adjustRule','togglePenalties','resetData','renameTournament','setCap','drawOrder'].forEach(n=>{const f=globalThis[n];globalThis[n]=function(){if(S.locked){toast('Turnaj je zamknutý 🔒');renderAll();return}return f.apply(this,arguments)}});
 document.addEventListener('gesturestart',e=>e.preventDefault());if(S.tab==='stats')S.tab='tournaments';
 if(!loaded){generateBalancedTeams(false);createSchedule()}
 switchMainTab('tournaments',true);setSubTab(S.sub||'matches');renderAll();
