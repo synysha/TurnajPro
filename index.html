@@ -1,0 +1,770 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <title>TurnajPro – Mobilná aplikácia na správu turnajov</title>
+    <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+        }
+
+        body {
+            background: radial-gradient(circle at 50% 20%, #1c1d24 0%, #070709 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0;
+            padding: 16px;
+            overflow-x: hidden;
+        }
+
+        /* Realistic Smartphone Frame */
+        .phone-chassis {
+            width: 100%;
+            max-width: 393px;
+            height: 830px;
+            max-height: 92vh;
+            background: #0D0D0F;
+            border-radius: 52px;
+            border: 8px solid #232329;
+            box-shadow: 
+                0 0 0 2px #383842,
+                0 30px 70px -15px rgba(0, 0, 0, 0.85),
+                0 0 80px rgba(16, 185, 129, 0.08);
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Subtle Side Hardware Buttons */
+        .phone-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            max-width: 405px;
+        }
+        .hw-btn-left-1, .hw-btn-left-2, .hw-btn-right {
+            position: absolute;
+            background: #2b2b33;
+            border-radius: 4px;
+            z-index: 0;
+        }
+        .hw-btn-left-1 { left: 2px; top: 155px; width: 4px; height: 46px; }
+        .hw-btn-left-2 { left: 2px; top: 215px; width: 4px; height: 46px; }
+        .hw-btn-right { right: 2px; top: 185px; width: 4px; height: 72px; }
+
+        /* Hide Scrollbar inside App */
+        .app-scroll::-webkit-scrollbar {
+            display: none;
+        }
+        .app-scroll {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        /* Custom Borders & Surfaces */
+        .surface-card {
+            background-color: #18181B;
+            border: 1px solid rgba(255, 255, 255, 0.11);
+        }
+        .surface-card-hover:active {
+            background-color: #202025;
+            transform: scale(0.99);
+        }
+        .hairline-b {
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .hairline-t {
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        /* Live Pulse Dot */
+        @keyframes pulse-emerald {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.4; transform: scale(1.35); }
+        }
+        .live-dot {
+            animation: pulse-emerald 1.6s infinite ease-in-out;
+        }
+
+        /* Bottom Sheet Transition */
+        .modal-backdrop {
+            transition: opacity 0.25s ease;
+        }
+        .modal-sheet {
+            transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+
+        /* Custom Range Slider */
+        input[type="range"] {
+            -webkit-appearance: none;
+            background: rgba(255,255,255,0.12);
+            height: 4px;
+            border-radius: 4px;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #10B981;
+            cursor: pointer;
+            border: 2px solid #0D0D0F;
+        }
+
+        /* Shuffle Animation */
+        @keyframes shufflePulse {
+            0% { transform: translateY(0); opacity: 1; }
+            40% { transform: translateY(-6px); opacity: 0.4; }
+            100% { transform: translateY(0); opacity: 1; }
+        }
+        .shuffling {
+            animation: shufflePulse 0.35s ease;
+        }
+    input,select,textarea{user-select:text;-webkit-user-select:text}
+@media(max-width:520px){body{padding:0;display:block;background:#0D0D0F}.phone-wrapper{max-width:none}.phone-chassis{max-width:none;width:100%;height:100dvh;max-height:none;border:0;border-radius:0;box-shadow:none;padding-top:env(safe-area-inset-top,0px)}.sb,.hi{display:none!important}}
+</style>
+</head>
+<body>
+
+<div class="phone-wrapper">
+    <!-- Hardware Buttons -->
+    <div class="hw-btn-left-1 hidden sm:block"></div>
+    <div class="hw-btn-left-2 hidden sm:block"></div>
+    <div class="hw-btn-right hidden sm:block"></div>
+
+    <!-- Smartphone Device -->
+    <div class="phone-chassis" id="phoneScreen">
+        
+        <!-- iOS Status Bar + Dynamic Island -->
+        <div class="px-6 pt-3 pb-2 flex items-center justify-between text-white text-[12px] font-semibold z-20 shrink-0 bg-[#0D0D0F] sb">
+            <span class="tracking-tight w-12">9:41</span>
+            <!-- Dynamic Island -->
+            <div class="w-[104px] h-[27px] bg-black rounded-full border border-white/10 flex items-center justify-end px-2.5">
+                <div class="w-2.5 h-2.5 rounded-full bg-[#131826] border border-white/10"></div>
+            </div>
+            <!-- Status Icons -->
+            <div class="flex items-center gap-1.5 w-12 justify-end">
+                <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M2 20h2V10H2v10zm4 0h2V7H6v13zm4 0h2V4h-2v16zm4 0h2V2h-2v18zm4 0h2V0h-2v20z"/></svg>
+                <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 18c1.1 0 2 .9 2 2s-.9 2-2 2-2-.9-2-2 .9-2 2-2zm-4.9-2.3l1.4 1.4C9.4 16.4 10.6 16 12 16s2.6.4 3.5 1.1l1.4-1.4C15.6 14.6 13.9 14 12 14s-3.6.6-4.9 1.7zm-2.8-2.8l1.4 1.4C7.3 13 9.5 12 12 12s4.7 1 6.3 2.3l1.4-1.4C17.7 11.1 15 10 12 10s-5.7 1.1-7.7 2.9z"/></svg>
+                <div class="w-5 h-2.5 border border-white/50 rounded-[3px] p-[1px] flex items-center">
+                    <div class="bg-white h-full w-4 rounded-[1px]"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Toast Notification inside Phone -->
+        <div id="appToast" class="pointer-events-none opacity-0 transition-all duration-300 absolute top-14 left-4 right-4 z-50 bg-[#1E1E24] border border-emerald-500/40 text-white text-xs font-medium px-3.5 py-2.5 rounded-xl shadow-2xl flex items-center gap-2">
+            <span class="w-2 h-2 rounded-full bg-emerald-400 shrink-0"></span>
+            <span id="appToastMsg">Zmena uložená</span>
+        </div>
+
+        <!-- MAIN CONTENT VIEWPORT -->
+        <div id="mainViewport" class="flex-1 overflow-y-auto app-scroll px-4 pb-24">
+            
+            <!-- ==========================================
+                 SCREEN 1: TURNAJE (Matches, Table, Bracket)
+                 ========================================== -->
+            <div id="screen-tournaments" class="space-y-4 pt-1">
+                <!-- App Top Header -->
+                <div class="flex items-center justify-between">
+                    <div>
+                        <div class="flex items-center gap-1.5">
+                            <span class="text-[11px] uppercase tracking-widest text-[#8E8E93] font-semibold">Aktívny turnaj</span>
+                            <span id="liveBadge" class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-400 text-[10px] font-bold">
+                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 live-dot"></span> LIVE
+                            </span>
+                        </div>
+                        <h1 class="text-white text-xl font-bold tracking-tight mt-0.5 flex items-center gap-1.5">
+                            Zimný Pohár 2026
+                            <svg class="w-4 h-4 text-[#8E8E93]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+                        </h1>
+                    </div>
+                    <button onclick="switchMainTab('format')" class="w-9 h-9 rounded-full surface-card flex items-center justify-center text-white/80 hover:text-white" title="Upraviť formát">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"/></svg>
+                    </button>
+                </div>
+
+                <!-- Quick Format Switcher Pill Bar -->
+                <div class="flex gap-1.5 overflow-x-auto app-scroll pb-0.5">
+                    <button onclick="setTournamentFormat('Skupiny + Play-off')" data-format="Skupiny + Play-off" class="format-pill px-3 py-1.5 rounded-full text-[11px] font-semibold whitespace-nowrap bg-white text-black transition">
+                        Skupiny + Play-off
+                    </button>
+                    <button onclick="setTournamentFormat('Každý s každým')" data-format="Každý s každým" class="format-pill px-3 py-1.5 rounded-full text-[11px] font-medium whitespace-nowrap surface-card text-[#8E8E93] transition">
+                        Každý s každým
+                    </button>
+                    <button onclick="setTournamentFormat('Pavúk KO')" data-format="Pavúk KO" class="format-pill px-3 py-1.5 rounded-full text-[11px] font-medium whitespace-nowrap surface-card text-[#8E8E93] transition">
+                        Pavúk KO
+                    </button>
+                </div>
+
+                <!-- Segmented Sub-navigation (Zápasy / Tabuľka / Pavúk) -->
+                <div class="grid grid-cols-3 p-1 rounded-xl bg-[#18181B] border border-white/10">
+                    <button onclick="setSubTab('matches')" id="subtab-matches" class="py-1.5 text-xs font-semibold rounded-lg bg-[#27272C] text-white shadow-sm transition">
+                        Zápasy
+                    </button>
+                    <button onclick="setSubTab('table')" id="subtab-table" class="py-1.5 text-xs font-medium rounded-lg text-[#8E8E93] transition">
+                        Tabuľka
+                    </button>
+                    <button onclick="setSubTab('bracket')" id="subtab-bracket" class="py-1.5 text-xs font-medium rounded-lg text-[#8E8E93] transition">
+                        Pavúk
+                    </button>
+                </div>
+
+                <!-- SUBVIEW 1: MATCHES LIST -->
+                <div id="subview-matches" class="space-y-2.5">
+                    <div class="flex items-center justify-between text-[11px] text-[#8E8E93] px-0.5">
+                        <span id="currentFormatLabel">Formát: Skupiny + Play-off</span>
+                        <span>Klikni na zápas pre zápis</span>
+                    </div>
+                    <div id="matchesContainer" class="space-y-2.5">
+                        <!-- Rendered by JS -->
+                    </div>
+                </div>
+
+                <!-- SUBVIEW 2: STANDINGS TABLE -->
+                <div id="subview-table" class="hidden space-y-3">
+                    <div class="surface-card rounded-2xl overflow-hidden">
+                        <div class="px-3.5 py-2.5 hairline-b flex items-center justify-between">
+                            <span class="text-xs font-bold text-white">Skupina A • Priebežné poradie</span>
+                            <span class="text-[10px] text-emerald-400 font-semibold">Top 2 postupujú</span>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left border-collapse">
+                                <thead>
+                                    <tr class="text-[10px] uppercase text-[#8E8E93] hairline-b">
+                                        <th class="py-2 pl-3.5 pr-1">#</th>
+                                        <th class="py-2 px-1">Tím</th>
+                                        <th class="py-2 px-1.5 text-center">Z</th>
+                                        <th class="py-2 px-1.5 text-center">Skóre</th>
+                                        <th class="py-2 pr-3.5 pl-1.5 text-right">B</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="standingsBody" class="divide-y divide-white/[0.07] text-xs">
+                                    <!-- Rendered by JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SUBVIEW 3: PLAY-OFF BRACKET -->
+                <div id="subview-bracket" class="hidden space-y-3">
+                    <div class="flex items-center justify-between px-0.5">
+                        <span class="text-xs font-semibold text-white">Vyraďovacia fáza</span>
+                        <span class="text-[11px] text-[#8E8E93]">Automatický postup</span>
+                    </div>
+                    
+                    <!-- Semifinals -->
+                    <div class="space-y-2">
+                        <div class="text-[10px] uppercase tracking-wider text-[#8E8E93] font-semibold">Semifinále</div>
+                        <div class="grid grid-cols-1 gap-2">
+                            <div class="surface-card rounded-xl p-3 relative">
+                                <div class="flex justify-between items-center text-xs pb-1.5 hairline-b">
+                                    <span class="text-white font-semibold flex items-center gap-2"><span class="w-4 h-4 rounded bg-emerald-500/20 text-emerald-400 text-[10px] flex items-center justify-center font-bold">FC</span> FC Tatran</span>
+                                    <span class="text-white font-bold">3</span>
+                                </div>
+                                <div class="flex justify-between items-center text-xs pt-1.5">
+                                    <span class="text-[#8E8E93] flex items-center gap-2"><span class="w-4 h-4 rounded bg-white/10 text-white/70 text-[10px] flex items-center justify-center font-bold">SK</span> ŠK Slovan B</span>
+                                    <span class="text-[#8E8E93] font-semibold">1</span>
+                                </div>
+                            </div>
+
+                            <div class="surface-card rounded-xl p-3 border-emerald-500/30">
+                                <div class="flex justify-between items-center text-xs pb-1.5 hairline-b">
+                                    <span class="text-white font-semibold flex items-center gap-2"><span class="w-4 h-4 rounded bg-white/15 text-white text-[10px] flex items-center justify-center font-bold">MŠ</span> MŠK Žilina U21</span>
+                                    <span class="text-emerald-400 font-bold" id="bracketLiveScoreA">2</span>
+                                </div>
+                                <div class="flex justify-between items-center text-xs pt-1.5">
+                                    <span class="text-white font-semibold flex items-center gap-2"><span class="w-4 h-4 rounded bg-white/15 text-white text-[10px] flex items-center justify-center font-bold">AS</span> AS Trenčín</span>
+                                    <span class="text-emerald-400 font-bold" id="bracketLiveScoreB">2</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Connector Visual -->
+                    <div class="flex justify-center py-0.5">
+                        <div class="h-5 w-[1px] bg-white/25"></div>
+                    </div>
+
+                    <!-- Final -->
+                    <div class="space-y-1.5">
+                        <div class="text-[10px] uppercase tracking-wider text-emerald-400 font-semibold flex items-center gap-1.5">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/></svg>
+                            Finále • 16:30 (Ihrisko 1)
+                        </div>
+                        <div class="surface-card rounded-xl p-3.5 border border-white/20 bg-gradient-to-b from-[#1e1e24] to-[#151518]">
+                            <div class="flex justify-between items-center text-xs pb-2 hairline-b">
+                                <span class="text-white font-bold">FC Tatran</span>
+                                <span class="text-[11px] px-2 py-0.5 rounded bg-white/10 text-white/80">Postupujúci SF1</span>
+                            </div>
+                            <div class="flex justify-between items-center text-xs pt-2">
+                                <span class="text-[#8E8E93] italic">Víťaz Semifinále 2</span>
+                                <span class="text-[11px] text-[#8E8E93]">Čaká sa</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ==========================================
+                 SCREEN 2: GENERÁTOR TÍMOV & ROZPISU
+                 ========================================== -->
+            <div id="screen-generator" class="hidden space-y-4 pt-1">
+                <div>
+                    <span class="text-[11px] uppercase tracking-widest text-[#8E8E93] font-semibold">AI Rozdeľovač</span>
+                    <h1 class="text-white text-xl font-bold tracking-tight mt-0.5">Generátor tímov</h1>
+                </div>
+
+                <!-- Team Count & Algorithm Controls -->
+                <div class="surface-card rounded-2xl p-3.5 space-y-3">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-medium text-white">Počet vyvážených tímov</span>
+                        <div id="tcountBox" class="flex gap-1 flex-wrap justify-end"></div>
+                    </div>
+
+                    <div class="flex items-center justify-between pt-2 hairline-t">
+                        <div>
+                            <div class="text-xs font-medium text-white">Vyvažovanie podľa ELO / Hviezd</div>
+                            <div class="text-[10px] text-[#8E8E93]">Zabezpečí rovnakú silu súpisiek</div>
+                        </div>
+                        <span class="px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-400 text-[10px] font-semibold">Aktívne</span>
+                    </div>
+
+                    <button onclick="generateBalancedTeams()" class="w-full py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 active:scale-[0.99] text-black font-bold text-xs transition flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/15">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                        Vygenerovať vyvážené tímy
+                    </button>
+                </div>
+
+                <!-- Generated Squads Output -->
+                <div class="space-y-2.5">
+                    <div class="flex items-center justify-between px-0.5">
+                        <span class="text-xs font-semibold text-white">Výsledné súpisky (<span id="poolCountLabel">12</span> hráčov)</span>
+                        <button onclick="createScheduleFromTeams()" class="text-[11px] font-semibold text-emerald-400 hover:underline">
+                            Vytvoriť rozpis →
+                        </button>
+                    </div>
+                    <div id="generatedTeamsContainer" class="space-y-2.5">
+                        <!-- Rendered by JS -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- ==========================================
+                 SCREEN 3: ŠTATISTIKY HRÁČOV
+                 ========================================== -->
+            <div id="screen-stats" class="hidden space-y-4 pt-1">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <span class="text-[11px] uppercase tracking-widest text-[#8E8E93] font-semibold">Individuálne výkony</span>
+                        <h1 class="text-white text-xl font-bold tracking-tight mt-0.5">Štatistiky turnaja</h1>
+                    </div>
+                    <button onclick="openAddPlayerModal()" class="px-3 py-1.5 rounded-full bg-white text-black text-xs font-bold flex items-center gap-1 active:scale-95 transition">
+                        <span>+</span> Pridať hráča
+                    </button>
+                </div>
+
+                <!-- Leaderboard Filter Tabs -->
+                <div class="grid grid-cols-3 p-1 rounded-xl bg-[#18181B] border border-white/10">
+                    <button onclick="setStatsCategory('goals')" id="stat-tab-goals" class="py-1.5 text-xs font-semibold rounded-lg bg-[#27272C] text-white transition">
+                        Strelci
+                    </button>
+                    <button onclick="setStatsCategory('assists')" id="stat-tab-assists" class="py-1.5 text-xs font-medium rounded-lg text-[#8E8E93] transition">
+                        Asistencie
+                    </button>
+                    <button onclick="setStatsCategory('cards')" id="stat-tab-cards" class="py-1.5 text-xs font-medium rounded-lg text-[#8E8E93] transition">
+                        Karty
+                    </button>
+                </div>
+
+                <div class="text-[11px] text-[#8E8E93] flex justify-between px-0.5">
+                    <span>Hráč & Tím</span>
+                    <span>Rýchla úprava (+/-)</span>
+                </div>
+
+                <!-- Players Stats List -->
+                <div id="statsListContainer" class="space-y-2">
+                    <!-- Rendered by JS -->
+                </div>
+            </div>
+
+            <!-- ==========================================
+                 SCREEN 4: FORMÁT & PRAVIDLÁ TURNAJA
+                 ========================================== -->
+            <div id="screen-format" class="hidden space-y-4 pt-1">
+                <div>
+                    <span class="text-[11px] uppercase tracking-widest text-[#8E8E93] font-semibold">Konfigurácia</span>
+                    <h1 class="text-white text-xl font-bold tracking-tight mt-0.5">Formát & Pravidlá</h1>
+                </div>
+
+                <!-- Match Duration -->
+                <div class="surface-card rounded-2xl p-3.5 space-y-3">
+                    <div class="flex justify-between items-center">
+                        <span class="text-xs font-semibold text-white">Hrací čas zápasu</span>
+                        <span id="durationDisplay" class="text-xs font-bold text-emerald-400">15 minút</span>
+                    </div>
+                    <div class="grid grid-cols-3 gap-2">
+                        <button onclick="setMatchDuration(10)" data-dur="10" class="dur-btn py-2 rounded-xl text-xs font-semibold bg-[#27272C] text-[#8E8E93]">10 min</button>
+                        <button onclick="setMatchDuration(15)" data-dur="15" class="dur-btn py-2 rounded-xl text-xs font-bold bg-white text-black">15 min</button>
+                        <button onclick="setMatchDuration(20)" data-dur="20" class="dur-btn py-2 rounded-xl text-xs font-semibold bg-[#27272C] text-[#8E8E93]">20 min</button>
+                    </div>
+                </div>
+
+                <!-- Points System -->
+                <div class="surface-card rounded-2xl p-3.5 space-y-3">
+                    <div class="text-xs font-semibold text-white">Bodovací systém v skupine</div>
+                    <div class="flex items-center justify-between py-1 hairline-b">
+                        <span class="text-xs text-[#8E8E93]">Body za výhru</span>
+                        <div class="flex items-center gap-2">
+                            <button onclick="adjustRule('winPts', -1)" class="w-7 h-7 rounded-lg bg-[#27272C] text-white font-bold text-xs">-</button>
+                            <span id="ruleWinPts" class="w-5 text-center text-xs font-bold text-white">3</span>
+                            <button onclick="adjustRule('winPts', 1)" class="w-7 h-7 rounded-lg bg-[#27272C] text-white font-bold text-xs">+</button>
+                        </div>
+                    </div>
+                    <div class="flex items-center justify-between py-1">
+                        <span class="text-xs text-[#8E8E93]">Body za remízu</span>
+                        <div class="flex items-center gap-2">
+                            <button onclick="adjustRule('drawPts', -1)" class="w-7 h-7 rounded-lg bg-[#27272C] text-white font-bold text-xs">-</button>
+                            <span id="ruleDrawPts" class="w-5 text-center text-xs font-bold text-white">1</span>
+                            <button onclick="adjustRule('drawPts', 1)" class="w-7 h-7 rounded-lg bg-[#27272C] text-white font-bold text-xs">+</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Toggles & Advancing Teams -->
+                <div class="surface-card rounded-2xl p-3.5 space-y-3.5">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <div class="text-xs font-semibold text-white">Počet postupujúcich zo skupiny</div>
+                            <div class="text-[10px] text-[#8E8E93]">Nasadenie do play-off pavúka</div>
+                        </div>
+                        <select id="advancingSelect" onchange="applyRules()" class="bg-[#27272C] text-white text-xs font-bold px-2.5 py-1.5 rounded-lg border border-white/10 outline-none">
+                            <option value="1">Top 1 tím</option><option value="2">Top 2 tímy</option><option value="3">Top 3 tímy</option><option value="4">Top 4 tímy</option>
+                        </select>
+                    </div>
+
+                    <div class="flex items-center justify-between pt-2.5 hairline-t">
+                        <div>
+                            <div class="text-xs font-semibold text-white">Predĺženie / Penalty v Play-off</div>
+                            <div class="text-[10px] text-[#8E8E93]">Pri remíze v riadnom hracom čase</div>
+                        </div>
+                        <button id="penaltiesToggle" onclick="togglePenalties()" class="w-11 h-6 rounded-full bg-emerald-500 p-0.5 transition flex items-center justify-end">
+                            <span class="w-5 h-5 rounded-full bg-white shadow"></span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="surface-card rounded-2xl p-3.5 flex items-center justify-between"><div><div class="text-xs font-semibold text-white">Počet skupín</div><div class="text-[10px] text-[#8E8E93]">Pre formát Skupiny + Play-off</div></div><select id="groupsSelect" onchange="applyRules()" class="bg-[#27272C] text-white text-xs font-bold px-2.5 py-1.5 rounded-lg border border-white/10 outline-none"><option>1</option><option>2</option><option>3</option><option>4</option></select></div>
+<div class="surface-card rounded-2xl p-3.5 grid grid-cols-2 gap-2.5"><button onclick="resetData(0)" class="py-2 rounded-xl bg-[#27272C] text-white text-xs font-semibold">Vzorové dáta</button><button onclick="resetData(1)" class="py-2 rounded-xl bg-[#27272C] text-rose-400 text-xs font-semibold">Vymazať všetko</button></div>
+<!-- Instant Schedule Recalculation Preview -->
+                <div class="surface-card rounded-2xl p-3.5 bg-gradient-to-r from-[#18181B] to-[#1a221f] border-emerald-500/25">
+                    <div class="flex items-center justify-between mb-1.5">
+                        <span class="text-[11px] font-bold uppercase tracking-wider text-emerald-400">Prepočet harmonogramu</span>
+                        <span class="text-[10px] text-[#8E8E93]">2 ihriská</span>
+                    </div>
+                    <div class="grid grid-cols-3 gap-2 text-center pt-1">
+                        <div class="bg-black/30 rounded-xl p-2">
+                            <div id="previewTotalMatches" class="text-sm font-bold text-white">12</div>
+                            <div class="text-[10px] text-[#8E8E93]">Zápasov</div>
+                        </div>
+                        <div class="bg-black/30 rounded-xl p-2">
+                            <div id="previewTotalTime" class="text-sm font-bold text-white">1h 50m</div>
+                            <div class="text-[10px] text-[#8E8E93]">Trvanie</div>
+                        </div>
+                        <div class="bg-black/30 rounded-xl p-2">
+                            <div id="previewEndTime" class="text-sm font-bold text-emerald-400">16:50</div>
+                            <div class="text-[10px] text-[#8E8E93]">Koniec finále</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- ==========================================
+             BOTTOM SHEET MODAL: LIVE MATCH CONTROL
+             ========================================== -->
+        <div id="matchModalBackdrop" class="modal-backdrop hidden opacity-0 absolute inset-0 bg-black/75 z-30 flex items-end" onclick="closeMatchModal(event)">
+            <div id="matchModalSheet" class="modal-sheet translate-y-full w-full bg-[#161619] border-t border-white/15 rounded-t-3xl p-5 pb-8 space-y-4" onclick="event.stopPropagation()">
+                <!-- Drag Handle -->
+                <div class="w-10 h-1 bg-white/20 rounded-full mx-auto -mt-1"></div>
+                
+                <div class="flex items-center justify-between">
+                    <span id="modalMatchMeta" class="text-[11px] font-semibold text-emerald-400 uppercase tracking-wider">LIVE • Ihrisko 1</span>
+                    <button onclick="closeMatchModal()" class="text-xs text-[#8E8E93] hover:text-white px-2 py-1">Zavrieť</button>
+                </div>
+
+                <!-- Live Scoreboard Control -->
+                <div class="surface-card rounded-2xl p-4 flex items-center justify-between">
+                    <!-- Team A -->
+                    <div class="flex-1 text-center space-y-2">
+                        <div id="modalTeamAName" class="text-xs font-bold text-white truncate">MŠK Žilina U21</div>
+                        <div id="modalTeamAScore" class="text-3xl font-extrabold text-white">2</div>
+                        <button onclick="addGoalToMatch('A')" class="w-full py-2 rounded-xl bg-emerald-500 text-black font-bold text-xs active:scale-95 transition">
+                            +1 Gól
+                        </button>
+                    </div>
+
+                    <div class="px-3 text-[#8E8E93] font-bold text-sm">:</div>
+
+                    <!-- Team B -->
+                    <div class="flex-1 text-center space-y-2">
+                        <div id="modalTeamBName" class="text-xs font-bold text-white truncate">AS Trenčín</div>
+                        <div id="modalTeamBScore" class="text-3xl font-extrabold text-white">2</div>
+                        <button onclick="addGoalToMatch('B')" class="w-full py-2 rounded-xl bg-emerald-500 text-black font-bold text-xs active:scale-95 transition">
+                            +1 Gól
+                        </button>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-2.5"><button onclick="addGoalToMatch('A',-1)" class="py-2 rounded-xl surface-card text-[#8E8E93] text-[11px] font-semibold active:scale-95">−1 gól (ľavý tím)</button><button onclick="addGoalToMatch('B',-1)" class="py-2 rounded-xl surface-card text-[#8E8E93] text-[11px] font-semibold active:scale-95">−1 gól (pravý tím)</button></div>
+<button id="finishBtn" onclick="toggleFinish()" class="w-full py-2.5 rounded-xl bg-white text-black font-bold text-xs active:scale-95 transition">Ukončiť zápas</button>
+<!-- Assign Scorer & Cards Quick Bar -->
+                <div class="space-y-2">
+                    <label class="text-[11px] font-medium text-[#8E8E93] block">Priradiť akciu hráčovi:</label>
+                    <select id="modalPlayerSelect" class="w-full bg-[#222227] text-white text-xs font-medium px-3 py-2.5 rounded-xl border border-white/10 outline-none">
+                        <!-- Populated dynamically -->
+                    </select>
+                </div>
+
+                <div class="grid grid-cols-2 gap-2.5 pt-1">
+                    <button onclick="assignCardToSelected('yellow')" class="py-2.5 rounded-xl surface-card text-amber-400 font-semibold text-xs flex items-center justify-center gap-1.5 active:scale-95 transition">
+                        <span class="w-2.5 h-3.5 rounded-[2px] bg-amber-400 inline-block"></span>
+                        Žltá karta
+                    </button>
+                    <button onclick="assignCardToSelected('red')" class="py-2.5 rounded-xl surface-card text-rose-400 font-semibold text-xs flex items-center justify-center gap-1.5 active:scale-95 transition">
+                        <span class="w-2.5 h-3.5 rounded-[2px] bg-rose-500 inline-block"></span>
+                        Červená karta
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==========================================
+             BOTTOM SHEET MODAL: ADD NEW PLAYER
+             ========================================== -->
+        <div id="addPlayerBackdrop" class="modal-backdrop hidden opacity-0 absolute inset-0 bg-black/75 z-30 flex items-end" onclick="closeAddPlayerModal(event)">
+            <div id="addPlayerSheet" class="modal-sheet translate-y-full w-full bg-[#161619] border-t border-white/15 rounded-t-3xl p-5 pb-8 space-y-4" onclick="event.stopPropagation()">
+                <div class="w-10 h-1 bg-white/20 rounded-full mx-auto -mt-1"></div>
+                <div class="flex items-center justify-between">
+                    <h3 class="text-sm font-bold text-white">Pridať hráča do turnaja</h3>
+                    <button onclick="closeAddPlayerModal()" class="text-xs text-[#8E8E93]">Zrušiť</button>
+                </div>
+                <div class="space-y-3">
+                    <div>
+                        <label class="text-[11px] text-[#8E8E93] block mb-1">Meno a priezvisko</label>
+                        <input id="newPlayerName" type="text" placeholder="napr. Tomáš Kováč" class="w-full bg-[#222227] text-white text-xs px-3 py-2.5 rounded-xl border border-white/10 outline-none focus:border-emerald-500">
+                    </div>
+                    <div class="grid grid-cols-2 gap-2.5">
+                        <div>
+                            <label class="text-[11px] text-[#8E8E93] block mb-1">Tím</label>
+                            <select id="newPlayerTeam" class="w-full bg-[#222227] text-white text-xs px-3 py-2.5 rounded-xl border border-white/10 outline-none">
+                                <option value="FC Tatran">FC Tatran</option>
+                                <option value="MŠK Žilina U21">MŠK Žilina U21</option>
+                                <option value="AS Trenčín">AS Trenčín</option>
+                                <option value="ŠK Slovan B">ŠK Slovan B</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="text-[11px] text-[#8E8E93] block mb-1">Výkonnosť (1–5 ★)</label>
+                            <select id="newPlayerRating" class="w-full bg-[#222227] text-white text-xs px-3 py-2.5 rounded-xl border border-white/10 outline-none">
+                                <option value="5">5 ★ (Elite)</option>
+                                <option value="4" selected>4 ★ (Pokročilý)</option>
+                                <option value="3">3 ★ (Stred)</option>
+                            </select>
+                        </div>
+                    </div>
+                    <button onclick="confirmAddPlayer()" class="w-full py-2.5 rounded-xl bg-emerald-500 text-black font-bold text-xs mt-1">
+                        Uložiť hráča
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- BOTTOM NAVIGATION BAR -->
+        <div class="absolute bottom-0 left-0 right-0 bg-[#0D0D0F]/95 backdrop-blur-md hairline-t pt-2 pb-5 px-3 z-20">
+            <div class="grid grid-cols-4 gap-1">
+                <button onclick="switchMainTab('tournaments')" id="nav-tournaments" class="nav-btn flex flex-col items-center gap-1 text-white">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 21h8m-4-4v4m-4.5-9.5L5 9V5h3m8 6.5L19 9V5h-3M8 5h8v5a4 4 0 01-8 0V5z"/></svg>
+                    <span class="text-[10px] font-semibold">Turnaje</span>
+                </button>
+
+                <button onclick="switchMainTab('generator')" id="nav-generator" class="nav-btn flex flex-col items-center gap-1 text-[#8E8E93]">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                    <span class="text-[10px] font-medium">Generátor</span>
+                </button>
+
+                <button onclick="switchMainTab('stats')" id="nav-stats" class="nav-btn flex flex-col items-center gap-1 text-[#8E8E93]">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+                    <span class="text-[10px] font-medium">Štatistiky</span>
+                </button>
+
+                <button onclick="switchMainTab('format')" id="nav-format" class="nav-btn flex flex-col items-center gap-1 text-[#8E8E93]">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                    <span class="text-[10px] font-medium">Formát</span>
+                </button>
+            </div>
+            <!-- iOS Home Indicator -->
+            <div class="w-32 h-1 bg-white/30 rounded-full mx-auto mt-2.5 hi"></div>
+        </div>
+
+    </div>
+</div>
+
+<script>
+const KEY='turnajpro-v1';
+const NAMES='Lukáš Haraslín,Dávid Ďuriš,Marek Hamšík,Samuel Káčer,Jakub Kadák,Adam Obert,Martin Regáli,Peter Pekarík,Róbert Boženík,Tomáš Suslov,Filip Hlohovský,Juraj Kucka'.split(','),RT=[5,5,5,4,4,4,4,3,4,5,3,4];
+const fresh=()=>({tab:'tournaments',sub:'matches',fmt:'Skupiny + Play-off',stat:'goals',nt:3,rules:{dur:15,winPts:3,drawPts:1,adv:2,groups:2,pen:true},players:NAMES.map((n,i)=>({id:i+1,name:n,rating:RT[i],goals:0,assists:0,cards:0,team:-1})),teams:[],groups:[],m:[],ko:null});
+let S,cur=null;
+try{S=JSON.parse(localStorage.getItem(KEY))}catch(e){}
+const loaded=!!S;S=S||fresh();
+const $=id=>document.getElementById(id),save=()=>{try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}};
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const shuf=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.random()*(i+1)|0;[a[i],a[j]]=[a[j],a[i]]}return a};
+const note=t=>`<div class="surface-card rounded-2xl p-4 text-center text-xs text-[#8E8E93]">${t}</div>`;
+const tn=i=>i==null||!S.teams[i]?'?':esc(S.teams[i].name);
+const code=i=>{if(i==null||!S.teams[i])return'?';const w=S.teams[i].name.trim().split(/\s+/);return esc((w.length>1?w.map(x=>x[0]).join('').slice(0,2):w[0].slice(0,2)).toUpperCase())};
+const pteam=p=>S.teams[p.team]?esc(S.teams[p.team].name):'Bez tímu';
+const win=m=>!m?null:m.st==='BYE'?m.a:m.st==='FIN'&&m.sa!==m.sb?(m.sa>m.sb?m.a:m.b):null;
+let tt=null;
+function showToast(msg){const el=$('appToast');$('appToastMsg').textContent=msg;el.classList.replace('opacity-0','opacity-100');clearTimeout(tt);tt=setTimeout(()=>el.classList.replace('opacity-100','opacity-0'),2200)}
+const toast=showToast;
+
+function switchMainTab(tab,keep){S.tab=tab;['tournaments','generator','stats','format'].forEach(s=>{$('screen-'+s).classList.toggle('hidden',s!==tab);const b=$('nav-'+s),on=s===tab;b.classList.toggle('text-white',on);b.classList.toggle('text-[#8E8E93]',!on);b.querySelector('span').classList.toggle('font-semibold',on)});if(!keep)$('mainViewport').scrollTop=0;save()}
+function setSubTab(sub){S.sub=sub;['matches','table','bracket'].forEach(t=>{$('subview-'+t).classList.toggle('hidden',t!==sub);$('subtab-'+t).className='py-1.5 text-xs rounded-lg transition '+(t===sub?'font-semibold bg-[#27272C] text-white shadow-sm':'font-medium text-[#8E8E93]')});save()}
+function setTournamentFormat(f){S.fmt=f;S.teams.length?createSchedule():renderAll();toast('Prepnuté na: '+f)}
+
+function generateBalancedTeams(notify=true){const k=S.nt,P=S.players;
+ if(P.length<k)return toast('Pridaj aspoň '+k+' hráčov');
+ const old=S.teams.map(t=>t.name);S.teams=Array.from({length:k},(_,i)=>({name:old[i]||'Tím '+String.fromCharCode(65+i)}));
+ shuf(P).sort((a,b)=>b.rating-a.rating).forEach((p,i)=>{const r=i/k|0,x=i%k;p.team=r%2?k-1-x:x});
+ S.groups=[];S.m=[];S.ko=null;renderAll();if(notify)toast('Vygenerované '+k+' vyvážené tímy')}
+function setGenTeamCount(n){S.nt=n;generateBalancedTeams(false)}
+function renameTeam(i,v){S.teams[i].name=v.trim()||'Tím '+String.fromCharCode(65+i);renderAll()}
+
+function rr(ids){const a=ids.slice();if(a.length%2)a.push(null);const n=a.length,o=[];
+ for(let r=0;r<n-1;r++){for(let i=0;i<n/2;i++){const x=a[i],y=a[n-1-i];if(x!=null&&y!=null)o.push([x,y])}a.splice(1,0,a.pop())}return o}
+function makeKO(seeds){let size=1;while(size<seeds.length)size*=2;const n=Math.log2(size);S.ko={size};
+ const nm=r=>r==n-1?'Finále':r==n-2?'Semifinále':r==n-3?'Štvrťfinále':'Kolo '+(r+1);
+ for(let r=0;r<n;r++)for(let i=0;i<size/2**(r+1);i++){const o={id:'k'+r+'-'+i,ko:1,r,i,a:null,b:null,sa:0,sb:0,st:'UP',stage:nm(r)};
+  if(r==0){o.a=seeds[i];const b=seeds[size-1-i];o.b=b===undefined?null:b;if(o.b==null)o.st='BYE'}
+  S.m.push(o)}}
+function createSchedule(){const T=S.teams.length;if(T<2)return toast('Najprv vygeneruj tímy');
+ S.m=[];S.groups=[];S.ko=null;const ids=shuf([...Array(T).keys()]);let n=0;
+ if(S.fmt==='Pavúk KO')makeKO(ids);
+ else{const G=S.fmt==='Každý s každým'?1:Math.max(1,Math.min(S.rules.groups,T>>1));
+  S.groups=Array.from({length:G},(_,g)=>ids.filter((_,i)=>i%G===g));
+  const per=S.groups.map(rr),mx=Math.max(...per.map(p=>p.length));
+  for(let i=0;i<mx;i++)per.forEach((p,g)=>{if(p[i])S.m.push({id:'m'+n++,g,a:p[i][0],b:p[i][1],sa:0,sb:0,st:'UP',stage:G>1?'Skupina '+'ABCD'[g]:'Každý s každým'})})}
+ renderAll()}
+function createScheduleFromTeams(){if(S.teams.length<2)return toast('Najprv vygeneruj tímy');createSchedule();toast('Nový rozpis zápasov bol vytvorený');switchMainTab('tournaments');setSubTab('matches')}
+
+function stand(g){const t={},R=S.rules;S.groups[g].forEach(x=>t[x]={t:x,z:0,gf:0,ga:0,pts:0});
+ S.m.forEach(m=>{if(m.ko||m.g!==g||m.st!=='FIN')return;const A=t[m.a],B=t[m.b];A.z++;B.z++;A.gf+=m.sa;A.ga+=m.sb;B.gf+=m.sb;B.ga+=m.sa;
+  if(m.sa>m.sb)A.pts+=R.winPts;else if(m.sa<m.sb)B.pts+=R.winPts;else{A.pts+=R.drawPts;B.pts+=R.drawPts}});
+ return Object.values(t).sort((a,b)=>b.pts-a.pts||(b.gf-b.ga)-(a.gf-a.ga)||b.gf-a.gf)}
+function sync(){const gm=S.m.filter(m=>!m.ko);
+ if(S.fmt==='Skupiny + Play-off'&&S.groups.length){const done=gm.length&&gm.every(m=>m.st==='FIN');
+  if(S.ko&&!done){S.m=gm;S.ko=null}
+  else if(!S.ko&&done){const tb=S.groups.map((_,g)=>stand(g)),seeds=[];for(let r=0;r<S.rules.adv;r++)tb.forEach(t=>t[r]&&seeds.push(t[r].t));if(seeds.length>1)makeKO(seeds)}}
+ if(S.ko){const K=S.m.filter(m=>m.ko);K.forEach(m=>{if(m.r==0)return;const a=win(K.find(x=>x.r==m.r-1&&x.i==2*m.i)),b=win(K.find(x=>x.r==m.r-1&&x.i==2*m.i+1));
+  if(m.a!==a||m.b!==b){m.a=a;m.b=b;m.sa=0;m.sb=0;m.st='UP'}})}}
+function slots(){const o={};let k=0;S.m.forEach(m=>{if(m.st!=='BYE'){const t=840+(k>>1)*(S.rules.dur+3);o[m.id]={c:'Ihrisko '+(k%2+1),t:String(t/60|0).padStart(2,'0')+':'+String(t%60).padStart(2,'0')};k++}});return o}
+
+function renderMatches(){const sl=slots(),rk={LIVE:0,UP:1,FIN:2},L=S.m.filter(m=>m.st!=='BYE').sort((a,b)=>rk[a.st]-rk[b.st]);
+ $('currentFormatLabel').textContent='Formát: '+S.fmt;
+ document.querySelectorAll('.format-pill').forEach(p=>p.className='format-pill px-3 py-1.5 rounded-full text-[11px] whitespace-nowrap transition '+(p.dataset.format===S.fmt?'font-semibold bg-white text-black':'font-medium surface-card text-[#8E8E93]'));
+ $('liveBadge').style.display=S.m.some(m=>m.st==='LIVE')?'':'none';
+ $('matchesContainer').innerHTML=!L.length?note('Zatiaľ nie je rozpis. Vygeneruj tímy a vytvor rozpis.'+(S.teams.length?'<br><button onclick="createScheduleFromTeams()" class="mt-3 px-4 py-2 rounded-xl bg-emerald-500 text-black font-bold">Vytvoriť rozpis</button>':'')):L.map(m=>{
+  const live=m.st==='LIVE',fin=m.st==='FIN',s=sl[m.id],
+  badge=live?'<span class="inline-flex items-center gap-1.5 text-[10px] font-bold text-emerald-400 bg-emerald-500/15 px-2 py-0.5 rounded-full"><span class="w-1.5 h-1.5 rounded-full bg-emerald-400 live-dot"></span> LIVE</span>':fin?'<span class="text-[10px] font-semibold text-[#8E8E93] bg-white/5 px-2 py-0.5 rounded-full">Ukončené</span>':`<span class="text-[10px] font-medium text-[#8E8E93]">${s.t}</span>`,
+  row=(t,x)=>`<div class="flex items-center justify-between"><div class="flex items-center gap-2.5"><div class="w-6 h-6 rounded-lg bg-white/10 text-white text-[10px] font-bold flex items-center justify-center">${code(t)}</div><span class="text-xs font-semibold text-white">${t==null?'Čaká sa':tn(t)}</span></div><span class="text-sm font-extrabold ${live?'text-emerald-400':'text-white'}">${m.st==='UP'?'-':x}</span></div>`;
+  return `<div onclick="openMatchModal('${m.id}')" class="surface-card surface-card-hover rounded-2xl p-3.5 cursor-pointer transition ${live?'border-emerald-500/35':''}"><div class="flex items-center justify-between text-[11px] text-[#8E8E93] pb-2.5 hairline-b"><span class="font-medium">${s.c} • <span class="text-white/75">${m.stage}</span> • ${s.t}</span>${badge}</div><div class="pt-2.5 space-y-2">${row(m.a,m.sa)}${row(m.b,m.sb)}</div></div>`}).join('')}
+
+function renderTables(){const el=$('subview-table');
+ if(!S.groups.length){el.innerHTML=note(S.fmt==='Pavúk KO'?'Pavúk nemá tabuľku.':'Najprv vytvor rozpis.');return}
+ const adv=S.fmt==='Skupiny + Play-off'?S.rules.adv:0;
+ el.innerHTML=S.groups.map((_,g)=>`<div class="surface-card rounded-2xl overflow-hidden"><div class="px-3.5 py-2.5 hairline-b flex items-center justify-between"><span class="text-xs font-bold text-white">${S.groups.length>1?'Skupina '+'ABCD'[g]:'Tabuľka'} • Priebežné poradie</span>${adv?`<span class="text-[10px] text-emerald-400 font-semibold">Top ${adv} postupujú</span>`:''}</div><div class="overflow-x-auto"><table class="w-full text-left border-collapse"><thead><tr class="text-[10px] uppercase text-[#8E8E93] hairline-b"><th class="py-2 pl-3.5 pr-1">#</th><th class="py-2 px-1">Tím</th><th class="py-2 px-1.5 text-center">Z</th><th class="py-2 px-1.5 text-center">Skóre</th><th class="py-2 pr-3.5 pl-1.5 text-right">B</th></tr></thead><tbody class="divide-y divide-white/[0.07] text-xs">${stand(g).map((t,i)=>{const q=i<adv;return `<tr class="${q?'bg-emerald-500/[0.04]':''}"><td class="py-2.5 pl-3.5 pr-1 font-bold ${q?'text-emerald-400':'text-[#8E8E93]'}">${i+1}</td><td class="py-2.5 px-1 font-semibold text-white">${tn(t.t)}</td><td class="py-2.5 px-1.5 text-center text-[#8E8E93]">${t.z}</td><td class="py-2.5 px-1.5 text-center text-[#8E8E93]">${t.gf}:${t.ga}</td><td class="py-2.5 pr-3.5 pl-1.5 text-right font-extrabold text-white">${t.pts}</td></tr>`}).join('')}</tbody></table></div></div>`).join('')}
+
+function renderBracket(){const el=$('subview-bracket');
+ if(!S.ko){el.innerHTML=note(S.fmt==='Skupiny + Play-off'&&S.groups.length?'Play-off sa vygeneruje automaticky po odohraní všetkých skupinových zápasov.':S.fmt==='Každý s každým'?'Tento formát nemá play-off.':'Najprv vytvor rozpis.');return}
+ const K=S.m.filter(m=>m.ko),n=Math.log2(S.ko.size);let h='';
+ const card=m=>{const wn=win(m),row=(t,s,x)=>`<div class="flex justify-between items-center text-xs ${x?'pt-1.5':'pb-1.5 hairline-b'}"><span class="${t!=null&&wn===t?'text-white font-bold':'text-white/80 font-semibold'} flex items-center gap-2"><span class="w-4 h-4 rounded bg-white/10 text-white/70 text-[10px] flex items-center justify-center font-bold">${code(t)}</span>${t==null?(m.st==='BYE'?'voľno':'Čaká sa'):tn(t)}</span><span class="${m.st==='LIVE'?'text-emerald-400':'text-white'} font-bold">${m.st==='UP'||m.st==='BYE'?'-':s}</span></div>`;
+  return `<div onclick="openMatchModal('${m.id}')" class="surface-card surface-card-hover rounded-xl p-3 ${m.st==='LIVE'?'border-emerald-500/35':''}">${row(m.a,m.sa,0)}${row(m.b,m.sb,1)}</div>`};
+ for(let r=0;r<n;r++){const fin=r==n-1;h+=`<div class="space-y-2"><div class="text-[10px] uppercase tracking-wider font-semibold ${fin?'text-emerald-400':'text-[#8E8E93]'}">${K.find(m=>m.r==r).stage}</div>${K.filter(m=>m.r==r).map(card).join('')}</div>${fin?'':'<div class="flex justify-center py-0.5"><div class="h-5 w-[1px] bg-white/25"></div></div>'}`}
+ const ch=win(K.find(m=>m.r==n-1));
+ if(ch!=null)h+=`<div class="surface-card rounded-xl p-4 text-center border-emerald-500/30"><div class="text-[10px] uppercase tracking-wider text-emerald-400 font-semibold">Víťaz turnaja</div><div class="text-white text-lg font-extrabold mt-1">🏆 ${tn(ch)}</div></div>`;
+ el.innerHTML=h}
+
+function renderGen(){$('tcountBox').innerHTML=[2,3,4,5,6,8].map(n=>`<button onclick="setGenTeamCount(${n})" class="w-8 h-7 rounded-lg text-xs font-bold ${n==S.nt?'bg-emerald-500 text-black':'bg-[#27272C] text-[#8E8E93]'}">${n}</button>`).join('');
+ $('poolCountLabel').textContent=S.players.length;
+ $('generatedTeamsContainer').innerHTML=!S.teams.length?note('Zatiaľ žiadne tímy. Klikni na Vygenerovať.'):S.teams.map((t,i)=>{const ps=S.players.filter(p=>p.team===i),avg=ps.length?(ps.reduce((a,p)=>a+p.rating,0)/ps.length).toFixed(1):'0.0';
+  return `<div class="surface-card rounded-2xl p-3.5 space-y-2.5"><div class="flex items-center justify-between pb-2 hairline-b"><div class="flex items-center gap-2 min-w-0"><span class="w-2.5 h-2.5 rounded-full bg-emerald-400 shrink-0"></span><input value="${esc(t.name)}" onchange="renameTeam(${i},this.value)" class="bg-transparent text-xs font-bold text-white outline-none w-28"><span class="text-[10px] text-[#8E8E93]">(${ps.length} hráči)</span></div><span class="text-[11px] font-bold text-amber-400">Ø ${avg} ★</span></div>${ps.map(p=>`<div class="flex items-center justify-between text-xs py-0.5"><span class="text-white/90">${esc(p.name)}</span><span class="text-[10px] text-[#8E8E93]">${'★'.repeat(p.rating)}</span></div>`).join('')}</div>`}).join('')}
+
+function setStatsCategory(c){S.stat=c;['goals','assists','cards'].forEach(x=>$('stat-tab-'+x).className='py-1.5 text-xs rounded-lg transition '+(x===c?'font-semibold bg-[#27272C] text-white':'font-medium text-[#8E8E93]'));renderStats();save()}
+function renderStats(){const c=S.stat;setStatsTabs();
+ $('statsListContainer').innerHTML=!S.players.length?note('Zatiaľ žiadni hráči. Pridaj prvého hráča.'):[...S.players].sort((a,b)=>b[c]-a[c]).map((p,i)=>`<div class="surface-card rounded-xl px-3 py-2.5 flex items-center justify-between"><div class="flex items-center gap-2.5 min-w-0"><span class="w-5 text-xs font-bold ${i<3?'text-white':'text-[#8E8E93]'}">${i+1}.</span><div class="truncate"><div class="text-xs font-semibold text-white truncate">${esc(p.name)}</div><div class="text-[10px] text-[#8E8E93]">${pteam(p)}</div></div></div><div class="flex items-center gap-2 shrink-0"><button onclick="adjustPlayerStat(${p.id},-1)" class="w-7 h-7 rounded-lg bg-[#25252B] text-white/80 font-bold text-xs active:scale-90 transition">-</button><span class="w-6 text-center text-sm font-extrabold ${c==='cards'?'text-amber-400':'text-emerald-400'}">${p[c]}</span><button onclick="adjustPlayerStat(${p.id},1)" class="w-7 h-7 rounded-lg bg-[#25252B] text-white font-bold text-xs active:scale-90 transition">+</button></div></div>`).join('')}
+function setStatsTabs(){['goals','assists','cards'].forEach(x=>$('stat-tab-'+x).className='py-1.5 text-xs rounded-lg transition '+(x===S.stat?'font-semibold bg-[#27272C] text-white':'font-medium text-[#8E8E93]'))}
+function adjustPlayerStat(id,d){const p=S.players.find(x=>x.id===id);if(p){p[S.stat]=Math.max(0,p[S.stat]+d);renderAll()}}
+
+const sheet=(b,s,on)=>{const B=$(b),X=$(s);if(on){B.classList.remove('hidden');requestAnimationFrame(()=>{B.classList.remove('opacity-0');X.classList.remove('translate-y-full')})}else{B.classList.add('opacity-0');X.classList.add('translate-y-full');setTimeout(()=>B.classList.add('hidden'),260)}};
+function fillModal(){const m=S.m.find(x=>x.id===cur);$('modalMatchMeta').textContent=(m.st==='FIN'?'UKONČENÉ':'LIVE')+' • '+slots()[m.id].c+' ('+m.stage+')';
+ $('modalTeamAName').textContent=S.teams[m.a].name;$('modalTeamBName').textContent=S.teams[m.b].name;$('modalTeamAScore').textContent=m.sa;$('modalTeamBScore').textContent=m.sb;
+ $('finishBtn').textContent=m.st==='FIN'?'Znovu otvoriť zápas':'Ukončiť zápas'}
+function openMatchModal(id){const m=S.m.find(x=>x.id===id);if(!m||m.st==='BYE')return;if(m.a==null||m.b==null)return toast('Zápas ešte nemá obe strany');
+ if(m.st==='UP')m.st='LIVE';cur=id;fillModal();
+ const ps=S.players.filter(p=>p.team===m.a||p.team===m.b);
+ $('modalPlayerSelect').innerHTML=ps.length?ps.map(p=>`<option value="${p.id}">${esc(p.name)} (${pteam(p)})</option>`).join(''):'<option value="">Žiadni hráči</option>';
+ renderAll();sheet('matchModalBackdrop','matchModalSheet',1)}
+function closeMatchModal(){sheet('matchModalBackdrop','matchModalSheet',0)}
+function addGoalToMatch(side,d=1){const m=S.m.find(x=>x.id===cur);if(!m)return;if(m.st==='FIN')return toast('Zápas je ukončený – znovu ho otvor');
+ const k=side==='A'?'sa':'sb';m[k]=Math.max(0,m[k]+d);
+ const p=S.players.find(x=>x.id===+$('modalPlayerSelect').value);if(p)p.goals=Math.max(0,p.goals+d);
+ fillModal();renderAll();toast(d>0?'GÓL! '+(p?p.name:'')+' (+1)':'Gól odobratý')}
+function assignCardToSelected(type){const p=S.players.find(x=>x.id===+$('modalPlayerSelect').value);if(!p)return;p.cards++;renderAll();toast((type==='yellow'?'Žltá karta: ':'Červená karta: ')+p.name)}
+function toggleFinish(){const m=S.m.find(x=>x.id===cur);if(!m)return;
+ if(m.st==='FIN')m.st='LIVE';
+ else{if(m.ko&&m.sa===m.sb)return toast(S.rules.pen?'Remíza – pridaj gól po penaltách':'V play-off nie je remíza');m.st='FIN';closeMatchModal()}
+ fillModal();renderAll()}
+
+function openAddPlayerModal(){$('newPlayerTeam').innerHTML='<option value="-1">Bez tímu</option>'+S.teams.map((t,i)=>`<option value="${i}">${esc(t.name)}</option>`).join('');
+ $('newPlayerRating').innerHTML=[[5,'Elite'],[4,'Pokročilý'],[3,'Stred'],[2,'Začiatočník'],[1,'Nováčik']].map(([n,l])=>`<option value="${n}" ${n==3?'selected':''}>${n} ★ (${l})</option>`).join('');sheet('addPlayerBackdrop','addPlayerSheet',1)}
+function closeAddPlayerModal(){sheet('addPlayerBackdrop','addPlayerSheet',0)}
+function confirmAddPlayer(){const el=$('newPlayerName'),name=el.value.trim();if(!name)return toast('Zadaj meno hráča');
+ S.players.unshift({id:Math.max(0,...S.players.map(p=>p.id))+1,name,team:+$('newPlayerTeam').value,rating:+$('newPlayerRating').value,goals:0,assists:0,cards:0});
+ el.value='';closeAddPlayerModal();renderAll();toast('Hráč '+name+' pridaný')}
+
+function setMatchDuration(m){S.rules.dur=m;renderAll()}
+function adjustRule(k,d){S.rules[k]=Math.max(0,Math.min(5,S.rules[k]+d));renderAll();toast('Bodovanie aktualizované')}
+function togglePenalties(){S.rules.pen=!S.rules.pen;renderAll()}
+function applyRules(){S.rules.adv=+$('advancingSelect').value;S.rules.groups=+$('groupsSelect').value;S.teams.length?createSchedule():renderAll();toast('Rozpis prepočítaný')}
+function resetData(empty){const f=fresh();if(empty)f.players=[];S=f;if(!empty){generateBalancedTeams(false);createSchedule()}renderAll();toast(empty?'Všetky dáta vymazané':'Načítané vzorové dáta')}
+function renderRules(){const r=S.rules;$('durationDisplay').textContent=r.dur+' minút';
+ document.querySelectorAll('.dur-btn').forEach(b=>b.className='dur-btn py-2 rounded-xl text-xs '+(+b.dataset.dur===r.dur?'font-bold bg-white text-black':'font-semibold bg-[#27272C] text-[#8E8E93]'));
+ $('ruleWinPts').textContent=r.winPts;$('ruleDrawPts').textContent=r.drawPts;$('advancingSelect').value=r.adv;$('groupsSelect').value=r.groups;
+ $('penaltiesToggle').className='w-11 h-6 rounded-full p-0.5 transition flex items-center '+(r.pen?'bg-emerald-500 justify-end':'bg-[#27272C] justify-start');
+ let tot=S.m.filter(m=>m.st!=='BYE').length;if(!S.ko&&S.fmt==='Skupiny + Play-off'&&S.groups.length)tot+=Math.max(0,S.groups.length*r.adv-1);
+ const min=Math.ceil(tot/2)*(r.dur+3),e=840+min;
+ $('previewTotalMatches').textContent=tot;$('previewTotalTime').textContent=tot?(min/60|0)+'h '+min%60+'m':'-';
+ $('previewEndTime').textContent=tot?String(e/60|0).padStart(2,'0')+':'+String(e%60).padStart(2,'0'):'-'}
+
+function renderAll(){sync();save();renderMatches();renderTables();renderBracket();renderGen();renderStats();renderRules()}
+if(!loaded){generateBalancedTeams(false);createSchedule()}
+switchMainTab(S.tab,true);setSubTab(S.sub);renderAll();
+
+</script>
+</body>
+</html>
