@@ -183,19 +183,18 @@ html,body{touch-action:pan-x pan-y;-webkit-text-size-adjust:100%}
             <!-- ==========================================
                  SCREEN 1: TURNAJE (Matches, Table, Bracket)
                  ========================================== -->
-            <div id="screen-tournaments" class="space-y-4 pt-1">
+            <div id="screen-list" class="space-y-4 pt-1"></div>
+<div id="screen-tournaments" class="hidden space-y-4 pt-1">
                 <!-- App Top Header -->
                 <div class="flex items-center justify-between">
                     <div>
                         <div class="flex items-center gap-1.5">
-                            <span class="text-[11px] uppercase tracking-widest text-[#8E8E93] font-semibold">Aktívny turnaj</span>
+                            <button onclick="closeTournament()" class="text-[11px] uppercase tracking-widest text-[#8E8E93] font-semibold active:text-white">‹ Turnaje</button>
                             <span id="liveBadge" class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-400 text-[10px] font-bold">
                                 <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 live-dot"></span> LIVE
                             </span>
                         </div>
-                        <h1 class="text-white text-xl font-bold tracking-tight mt-0.5 flex items-center gap-1.5">Zimný Pohár 2026
-                            <svg class="w-4 h-4 text-[#8E8E93]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
-                        </h1>
+                        <h1 class="mt-0.5 flex items-center gap-1.5"><input id="tName" onchange="renameTournament(this.value)" maxlength="40" class="bg-transparent text-white text-xl font-bold tracking-tight outline-none min-w-0 w-52"><span class="text-[#8E8E93] text-sm">✎</span></h1>
                     </div>
                     <button onclick="switchMainTab('format')" class="w-9 h-9 rounded-full surface-card flex items-center justify-center text-white/80 hover:text-white" title="Upraviť formát">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"/></svg>
@@ -570,7 +569,15 @@ html,body{touch-action:pan-x pan-y;-webkit-text-size-adjust:100%}
             </div>
         </div>
 
-        <!-- BOTTOM NAVIGATION BAR -->
+        <div id="newTBackdrop" class="modal-backdrop hidden opacity-0 absolute inset-0 bg-black/75 z-30 flex items-end" onclick="closeNewT()">
+<div id="newTSheet" class="modal-sheet translate-y-full w-full bg-[#161619] border-t border-white/15 rounded-t-3xl p-5 pb-8 space-y-4" onclick="event.stopPropagation()">
+<div class="w-10 h-1 bg-white/20 rounded-full mx-auto -mt-1"></div>
+<div class="flex items-center justify-between"><h3 class="text-sm font-bold text-white">Nový turnaj</h3><button onclick="closeNewT()" class="text-xs text-[#8E8E93]">Zrušiť</button></div>
+<div><label class="text-[11px] text-[#8E8E93] block mb-1">Názov turnaja</label><input id="newTName" type="text" maxlength="40" placeholder="napr. Letný turnaj 2027" class="w-full bg-[#222227] text-white text-xs px-3 py-2.5 rounded-xl border border-white/10 outline-none focus:border-emerald-500"></div>
+<p class="text-[10px] text-[#8E8E93]">Hráči sa skopírujú z posledného turnaja (bez tímov a štatistík).</p>
+<button onclick="confirmNewTournament()" class="w-full py-2.5 rounded-xl bg-emerald-500 text-black font-bold text-xs">Vytvoriť turnaj</button>
+</div></div>
+<!-- BOTTOM NAVIGATION BAR -->
         <div class="absolute bottom-0 left-0 right-0 bg-[#0D0D0F]/95 backdrop-blur-md hairline-t pt-2 pb-5 px-3 z-20">
             <div class="grid grid-cols-3 gap-1">
                 <button onclick="switchMainTab('tournaments')" id="nav-tournaments" class="nav-btn flex flex-col items-center gap-1 text-white">
@@ -600,9 +607,12 @@ const KEY='turnajpro-v1';
 const NAMES='Lukáš Haraslín,Dávid Ďuriš,Marek Hamšík,Samuel Káčer,Jakub Kadák,Adam Obert,Martin Regáli,Peter Pekarík,Róbert Boženík,Tomáš Suslov,Filip Hlohovský,Juraj Kucka'.split(','),RT=[5,5,5,4,4,4,4,3,4,5,3,4];
 const fresh=()=>({tab:'tournaments',sub:'matches',fmt:'Skupiny + Play-off',stat:'goals',nt:3,rules:{dur:15,winPts:3,drawPts:1,adv:2,groups:2,pen:true},players:NAMES.map((n,i)=>({id:i+1,name:n,rating:RT[i],goals:0,assists:0,cards:0,team:-1})),teams:[],groups:[],m:[],ko:null});
 let S,cur=null;
-try{S=JSON.parse(localStorage.getItem(KEY))}catch(e){}
-const loaded=!!S;S=S||fresh();
-const $=id=>document.getElementById(id),save=()=>{try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}};
+let G=null,inList=true,old=null;
+try{G=JSON.parse(localStorage.getItem('turnajpro-v2'))}catch(e){}
+let loaded=!!(G&&Array.isArray(G.list));
+if(!loaded){try{old=JSON.parse(localStorage.getItem(KEY))}catch(e){}loaded=!!old;G={cur:'t1',list:[{id:'t1',name:'Zimný Pohár 2026',created:Date.now(),data:old||fresh()}]}}
+{const t=G.list.find(x=>x.id===G.cur);if(!t)G.cur=null;S=t?t.data:fresh()}
+const $=id=>document.getElementById(id),save=()=>{try{const t=G.list.find(x=>x.id===G.cur);if(t)t.data=S;localStorage.setItem('turnajpro-v2',JSON.stringify(G))}catch(e){}};
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const shuf=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.random()*(i+1)|0;[a[i],a[j]]=[a[j],a[i]]}return a};
 const note=t=>`<div class="surface-card rounded-2xl p-4 text-center text-xs text-[#8E8E93]">${t}</div>`;
@@ -614,7 +624,7 @@ let tt=null;
 function showToast(msg){const el=$('appToast');$('appToastMsg').textContent=msg;el.classList.replace('opacity-0','opacity-100');clearTimeout(tt);tt=setTimeout(()=>el.classList.replace('opacity-100','opacity-0'),2200)}
 const toast=showToast;
 
-function switchMainTab(tab,keep){S.tab=tab;['tournaments','generator','format'].forEach(s=>{$('screen-'+s).classList.toggle('hidden',s!==tab);const b=$('nav-'+s),on=s===tab;b.classList.toggle('text-white',on);b.classList.toggle('text-[#8E8E93]',!on);b.querySelector('span').classList.toggle('font-semibold',on)});if(!keep)$('mainViewport').scrollTop=0;save()}
+function switchMainTab(tab,keep){if(inList&&tab!=='tournaments')return toast('Najprv otvor turnaj');S.tab=tab;$('screen-list').classList.toggle('hidden',!(inList&&tab==='tournaments'));['tournaments','generator','format'].forEach(s=>{$('screen-'+s).classList.toggle('hidden',s!==tab||(s==='tournaments'&&inList));const b=$('nav-'+s),on=s===tab;b.classList.toggle('text-white',on);b.classList.toggle('text-[#8E8E93]',!on);b.querySelector('span').classList.toggle('font-semibold',on)});if(!keep)$('mainViewport').scrollTop=0;save()}
 function setSubTab(sub){S.sub=sub;['matches','table','bracket','stats'].forEach(t=>{$('subview-'+t).classList.toggle('hidden',t!==sub);$('subtab-'+t).className='py-1.5 text-xs rounded-lg transition '+(t===sub?'font-semibold bg-[#27272C] text-white shadow-sm':'font-medium text-[#8E8E93]')});save()}
 function setTournamentFormat(f){S.fmt=f;S.teams.length?createSchedule():renderAll();toast('Prepnuté na: '+f)}
 
@@ -683,13 +693,16 @@ function renderBracket(){const el=$('subview-bracket');
 function renderGen(){$('tcountBox').innerHTML=[2,3,4,5,6,8].map(n=>`<button onclick="setGenTeamCount(${n})" class="w-8 h-7 rounded-lg text-xs font-bold ${n==S.nt?'bg-emerald-500 text-black':'bg-[#27272C] text-[#8E8E93]'}">${n}</button>`).join('');
  $('poolCountLabel').textContent=S.players.length;
  $('generatedTeamsContainer').innerHTML=!S.teams.length?note('Zatiaľ žiadne tímy. Klikni na Vygenerovať.'):S.teams.map((t,i)=>{const ps=S.players.filter(p=>p.team===i),avg=ps.length?(ps.reduce((a,p)=>a+p.rating,0)/ps.length).toFixed(1):'0.0';
-  return `<div class="surface-card rounded-2xl p-3.5 space-y-2.5"><div class="flex items-center justify-between pb-2 hairline-b"><div class="flex items-center gap-2 min-w-0"><span class="w-2.5 h-2.5 rounded-full bg-emerald-400 shrink-0"></span><input value="${esc(t.name)}" onchange="renameTeam(${i},this.value)" class="bg-transparent text-xs font-bold text-white outline-none w-28"><span class="text-[10px] text-[#8E8E93]">(${ps.length} hráči)</span></div><span class="text-[11px] font-bold text-amber-400">Ø ${avg} ★</span></div>${ps.map(p=>`<div class="flex items-center justify-between text-xs py-0.5"><span class="text-white/90">${esc(p.name)}</span><span class="text-[10px] text-[#8E8E93]">${'★'.repeat(p.rating)}</span></div>`).join('')}</div>`}).join('')}
+  return `<div class="surface-card rounded-2xl p-3.5 space-y-2.5"><div class="flex items-center justify-between pb-2 hairline-b"><div class="flex items-center gap-2 min-w-0"><span class="w-2.5 h-2.5 rounded-full bg-emerald-400 shrink-0"></span><input value="${esc(t.name)}" onchange="renameTeam(${i},this.value)" class="bg-transparent text-xs font-bold text-white outline-none w-28"><span class="text-[10px] text-[#8E8E93]">(${ps.length} hráči)</span></div><span class="text-[11px] font-bold text-amber-400">Ø ${avg} ★</span></div>${ps.map(p=>`<div class="flex items-center gap-1 text-xs py-0.5"><span class="text-white/90">${esc(p.name)}</span>${CB(p)}<span class="text-[10px] text-amber-400/80 ml-1">${p.rating}★</span></div>`).join('')}</div>`}).join('')}
 
 const SEL='bg-[#27272C] text-white text-xs font-medium px-2.5 py-2 rounded-lg border border-white/10 outline-none';
 function setStatsCategory(c){S.stat=c;renderStats();save()}
 function renderStats(){const c=S.stat,T=[['goals','Strelci'],['assists','Asistencie'],['cards','Karty']];
  $('subview-stats').innerHTML=`<div class="grid grid-cols-3 p-1 rounded-xl bg-[#18181B] border border-white/10">${T.map(([k,l])=>`<button onclick="setStatsCategory('${k}')" class="py-1.5 text-xs rounded-lg transition ${k===c?'font-semibold bg-[#27272C] text-white':'font-medium text-[#8E8E93]'}">${l}</button>`).join('')}</div><div class="text-[11px] text-[#8E8E93] flex justify-between px-0.5"><span>Hráč &amp; Tím</span><span>Rýchla úprava (+/-)</span></div>`+(!S.players.length?note('Zatiaľ žiadni hráči.'):[...S.players].sort((a,b)=>b[c]-a[c]).map((p,i)=>`<div class="surface-card rounded-xl px-3 py-2.5 flex items-center justify-between"><div class="flex items-center gap-2.5 min-w-0"><span class="w-5 text-xs font-bold ${i<3?'text-white':'text-[#8E8E93]'}">${i+1}.</span><div class="truncate"><div class="text-xs font-semibold text-white truncate">${esc(p.name)}</div><div class="text-[10px] text-[#8E8E93]">${pteam(p)}</div></div></div><div class="flex items-center gap-2 shrink-0"><button onclick="adjustPlayerStat(${p.id},-1)" class="w-7 h-7 rounded-lg bg-[#25252B] text-white/80 font-bold text-xs active:scale-90 transition">-</button><span class="w-6 text-center text-sm font-extrabold ${c==='cards'?'text-amber-400':'text-emerald-400'}">${p[c]}</span><button onclick="adjustPlayerStat(${p.id},1)" class="w-7 h-7 rounded-lg bg-[#25252B] text-white font-bold text-xs active:scale-90 transition">+</button></div></div>`).join(''))}
-function renderPlayers(){$('playersSection').innerHTML=`<div class="flex items-center justify-between px-0.5 pt-2"><span class="text-xs font-semibold text-white">Hráči (${S.players.length})</span><button onclick="openAddPlayerModal()" class="px-3 py-1.5 rounded-full bg-white text-black text-xs font-bold flex items-center gap-1 active:scale-95 transition"><span>+</span> Pridať hráča</button></div>`+(!S.players.length?note('Zatiaľ žiadni hráči. Pridaj prvého tlačidlom hore.'):S.players.map(p=>`<div class="surface-card rounded-xl px-3 py-2.5 space-y-2"><div class="flex items-center justify-between"><span class="text-xs font-semibold text-white truncate">${esc(p.name)}${(S.caps||[]).includes(p.id)?' <span class="text-amber-400">©</span>':''}</span><button onclick="delPlayer(${p.id})" class="w-7 h-7 rounded-lg bg-[#25252B] text-rose-400 font-bold text-xs active:scale-90">✕</button></div><div class="flex gap-2"><select onchange="setPTeam(${p.id},this.value)" class="flex-1 min-w-0 ${SEL}"><option value="-1">Bez tímu</option>${S.teams.map((t,i)=>`<option value="${i}" ${p.team===i?'selected':''}>${esc(t.name)}</option>`).join('')}</select><select onchange="setRating(${p.id},this.value)" class="${SEL}">${[5,4,3,2,1].map(n=>`<option value="${n}" ${p.rating===n?'selected':''}>${n} ★</option>`).join('')}</select></div></div>`).join(''))}
+const tl=i=>S.teams[i]?esc((S.teams[i].name.trim().split(/\s+/).pop()[0]||'?').toUpperCase()):'–';
+const CB=p=>(S.caps||[]).includes(p.id)?'<span class="text-[9px] font-extrabold text-amber-400 border border-amber-400/50 rounded px-1 ml-1.5 align-middle">C</span>':'';
+const pick=(lb,cls,fn,id,opts)=>`<div class="relative shrink-0"><div class="min-w-[30px] h-7 px-1.5 rounded-lg bg-[#27272C] text-[11px] font-bold flex items-center justify-center pointer-events-none ${cls}">${lb}</div><select onchange="${fn}(${id},this.value)" class="absolute inset-0 w-full h-full opacity-0">${opts}</select></div>`;
+function renderPlayers(){$('playersSection').innerHTML=`<div class="flex items-center justify-between px-0.5 pt-2"><span class="text-xs font-semibold text-white">Hráči (${S.players.length})</span><button onclick="openAddPlayerModal()" class="px-3 py-1.5 rounded-full bg-white text-black text-xs font-bold flex items-center gap-1 active:scale-95 transition"><span>+</span> Pridať hráča</button></div>`+(!S.players.length?note('Zatiaľ žiadni hráči. Pridaj prvého tlačidlom hore.'):S.players.map(p=>`<div class="surface-card rounded-xl pl-3 pr-2 py-2 flex items-center gap-1.5"><div class="flex-1 min-w-0 truncate text-xs font-semibold text-white">${esc(p.name)}${CB(p)}</div>${pick(tl(p.team),'text-white','setPTeam',p.id,`<option value="-1" ${p.team<0?'selected':''}>Bez tímu</option>`+S.teams.map((t,i)=>`<option value="${i}" ${p.team===i?'selected':''}>${esc(t.name)}</option>`).join(''))}${pick(p.rating+'★','text-amber-400','setRating',p.id,[5,4,3,2,1].map(n=>`<option value="${n}" ${p.rating===n?'selected':''}>${n} ★</option>`).join(''))}<button onclick="delPlayer(${p.id})" class="w-7 h-7 shrink-0 rounded-lg bg-[#25252B] text-rose-400 font-bold text-xs active:scale-90">✕</button></div>`).join(''))}
 function setGenTab(t){S.gtab=t;renderGenTab();save()}
 function renderGenTab(){const t=S.gtab||'teams',L={teams:'Tímy ('+S.teams.length+')',players:'Hráči ('+S.players.length+')',draft:'Voľby'};
  $('gen-teams').classList.toggle('hidden',t!=='teams');$('playersSection').classList.toggle('hidden',t!=='players');$('draftSection').classList.toggle('hidden',t!=='draft');
@@ -699,6 +712,26 @@ function setCap(i,v){caps();S.caps[i]=v?+v:null;S.order=[];renderAll()}
 function drawOrder(){const c=caps().filter(x=>x!=null);if(c.length<2)return toast('Vyber aspoň 2 kapitánov');S.order=shuf(c);renderAll()}
 function renderDraft(){const c=caps(),ord=(S.order||[]).filter(id=>c.includes(id)),W=['prvý','druhý','tretí'];
  $('draftSection').innerHTML=`<div class="surface-card rounded-2xl p-3.5 space-y-2.5"><div class="flex items-center justify-between"><span class="text-xs font-semibold text-white">Kapitáni</span><span class="text-[10px] text-[#8E8E93]">počet = počet tímov (${S.nt})</span></div>${c.map((id,i)=>`<div class="flex items-center gap-2"><span class="w-16 shrink-0 text-[11px] text-[#8E8E93]">Kapitán ${i+1}</span><select onchange="setCap(${i},this.value)" class="flex-1 min-w-0 ${SEL}"><option value="">— vyber —</option>${S.players.filter(p=>p.id===id||!c.includes(p.id)).map(p=>`<option value="${p.id}" ${p.id===id?'selected':''}>${esc(p.name)}</option>`).join('')}</select></div>`).join('')}<button onclick="drawOrder()" class="w-full py-2.5 rounded-xl bg-emerald-500 text-black font-bold text-xs active:scale-[0.99] transition">🎲 Vylosovať poradie výberu</button></div>`+(ord.length?`<div class="surface-card rounded-2xl p-3.5 space-y-2 shuffling"><div class="text-xs font-semibold text-white pb-2 hairline-b">Poradie výberu hráčov</div>${ord.map((id,i)=>`<div class="flex items-center gap-3 text-xs"><span class="w-6 h-6 rounded-lg bg-emerald-500/15 text-emerald-400 font-bold flex items-center justify-center">${i+1}</span><span class="text-white font-semibold">${esc(pById(id).name)}</span><span class="text-[10px] text-[#8E8E93]">vyberá ako ${W[i]||(i+1)+'.'}</span></div>`).join('')}</div>`:'')}
+const curT=()=>G.list.find(x=>x.id===G.cur);
+function tInfo(d){const m=d.m||[],real=m.filter(x=>x.st!=='BYE'),fin=real.filter(x=>x.st==='FIN').length;let champ=null;
+ if(d.ko){const f=m.find(x=>x.ko&&x.r==Math.log2(d.ko.size)-1),w=win(f);if(w!=null&&d.teams[w])champ=d.teams[w].name}
+ const done=champ!=null||(real.length&&fin===real.length&&d.fmt==='Každý s každým');
+ return{tot:real.length,fin,champ,s:done?'d':(fin||real.some(x=>x.st==='LIVE'))?'p':'n'}}
+function renderList(){const ST={n:['Nezačatý','text-[#8E8E93] bg-white/5'],p:['Prebieha','text-emerald-400 bg-emerald-500/15'],d:['Ukončený','text-amber-400 bg-amber-500/15']};
+ $('screen-list').innerHTML=`<div><span class="text-[11px] uppercase tracking-widest text-[#8E8E93] font-semibold">Správa turnajov</span><h1 class="text-white text-xl font-bold tracking-tight mt-0.5">Turnaje</h1></div><button onclick="newTournament()" class="w-full py-3 rounded-2xl bg-emerald-500 text-black font-bold text-sm active:scale-[0.99] transition shadow-lg shadow-emerald-500/15">+ Nový turnaj</button><div class="text-[11px] uppercase tracking-widest text-[#8E8E93] font-semibold px-0.5 pt-1">História turnajov (${G.list.length})</div>`+(G.list.length?G.list.map(t=>{const d=t.data,i=tInfo(d),[lb,cl]=ST[i.s];
+  return `<div onclick="openTournament('${t.id}')" class="surface-card surface-card-hover rounded-2xl p-3.5 cursor-pointer transition"><div class="flex items-start justify-between gap-2"><div class="min-w-0"><div class="text-sm font-bold text-white truncate">${esc(t.name)}</div><div class="text-[11px] text-[#8E8E93] mt-0.5">${new Date(t.created).toLocaleDateString('sk-SK')} • ${esc(d.fmt)}</div></div><button onclick="event.stopPropagation();delTournament('${t.id}')" class="w-7 h-7 shrink-0 rounded-lg bg-[#25252B] text-rose-400 font-bold text-xs active:scale-90">✕</button></div><div class="flex items-center justify-between mt-2.5 pt-2.5 hairline-t"><span class="text-[11px] text-[#8E8E93]">${d.teams.length} tímov • ${i.fin}/${i.tot} zápasov${i.champ?' • 🏆 '+esc(i.champ):''}</span><span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${cl}">${lb}</span></div></div>`}).join(''):note('Zatiaľ žiadny turnaj. Vytvor prvý tlačidlom hore.'))}
+function renderHeader(){const t=curT();$('tName').value=t?t.name:''}
+function openTournament(id){const t=G.list.find(x=>x.id===id);if(!t)return;save();G.cur=id;S=t.data;inList=false;switchMainTab('tournaments');setSubTab(S.sub||'matches');renderAll()}
+function closeTournament(){save();inList=true;switchMainTab('tournaments');renderAll()}
+function renameTournament(v){const t=curT();if(t){t.name=v.trim().slice(0,40)||'Turnaj';renderAll()}}
+function closeNewT(){sheet('newTBackdrop','newTSheet',0)}
+function newTournament(){$('newTName').value='';sheet('newTBackdrop','newTSheet',1)}
+function confirmNewTournament(){const f=fresh();if(G.cur)f.players=S.players.map(p=>({id:p.id,name:p.name,rating:p.rating,goals:0,assists:0,cards:0,team:-1}));
+ f.gtab='teams';const t={id:'t'+Date.now(),name:$('newTName').value.trim().slice(0,40)||'Nový turnaj',created:Date.now(),data:f};
+ save();G.list.unshift(t);closeNewT();openTournament(t.id);toast('Turnaj vytvorený')}
+let pend=null;
+function delTournament(id){if(pend!==id){pend=id;toast('Klikni znova pre zmazanie turnaja');setTimeout(()=>{if(pend===id)pend=null},3000);return}
+ pend=null;G.list=G.list.filter(t=>t.id!==id);if(G.cur===id){G.cur=null;S=fresh()}save();renderList();toast('Turnaj zmazaný')}
 const pById=id=>S.players.find(p=>p.id===id);
 function delPlayer(id){S.players=S.players.filter(p=>p.id!==id);renderAll()}
 function setPTeam(id,v){pById(id).team=+v;renderAll()}
@@ -746,10 +779,10 @@ function renderRules(){const r=S.rules;$('durationDisplay').textContent=r.dur+' 
  $('previewTotalMatches').textContent=tot;$('previewTotalTime').textContent=tot?(min/60|0)+'h '+min%60+'m':'-';
  $('previewEndTime').textContent=tot?String(e/60|0).padStart(2,'0')+':'+String(e%60).padStart(2,'0'):'-'}
 
-function renderAll(){sync();save();renderMatches();renderTables();renderBracket();renderGen();renderPlayers();renderDraft();renderGenTab();renderStats();renderRules()}
+function renderAll(){sync();save();renderMatches();renderTables();renderBracket();renderGen();renderPlayers();renderDraft();renderGenTab();renderList();renderHeader();renderStats();renderRules()}
 document.addEventListener('gesturestart',e=>e.preventDefault());if(S.tab==='stats')S.tab='tournaments';
 if(!loaded){generateBalancedTeams(false);createSchedule()}
-switchMainTab(S.tab,true);setSubTab(S.sub);renderAll();
+switchMainTab('tournaments',true);setSubTab(S.sub||'matches');renderAll();
 
 </script>
 </body>
