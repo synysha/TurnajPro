@@ -519,24 +519,7 @@ html,body{overscroll-behavior:none}
 
                 <div class="grid grid-cols-2 gap-2.5"><button onclick="addGoalToMatch('A',-1)" class="py-2 rounded-xl surface-card text-[#8E8E93] text-[11px] font-semibold active:scale-95">−1 gól (ľavý tím)</button><button onclick="addGoalToMatch('B',-1)" class="py-2 rounded-xl surface-card text-[#8E8E93] text-[11px] font-semibold active:scale-95">−1 gól (pravý tím)</button></div>
 <button id="finishBtn" onclick="toggleFinish()" class="w-full py-2.5 rounded-xl bg-white text-black font-bold text-xs active:scale-95 transition">Ukončiť zápas</button>
-<!-- Assign Scorer & Cards Quick Bar -->
-                <div class="space-y-2">
-                    <label class="text-[11px] font-medium text-[#8E8E93] block">Priradiť akciu hráčovi:</label>
-                    <select id="modalPlayerSelect" class="w-full bg-[#222227] text-white text-xs font-medium px-3 py-2.5 rounded-xl border border-white/10 outline-none">
-                        <!-- Populated dynamically -->
-                    </select>
-                </div>
 
-                <div class="grid grid-cols-2 gap-2.5 pt-1">
-                    <button onclick="assignCardToSelected('yellow')" class="py-2.5 rounded-xl surface-card text-amber-400 font-semibold text-xs flex items-center justify-center gap-1.5 active:scale-95 transition">
-                        <span class="w-2.5 h-3.5 rounded-[2px] bg-amber-400 inline-block"></span>
-                        Žltá karta
-                    </button>
-                    <button onclick="assignCardToSelected('red')" class="py-2.5 rounded-xl surface-card text-rose-400 font-semibold text-xs flex items-center justify-center gap-1.5 active:scale-95 transition">
-                        <span class="w-2.5 h-3.5 rounded-[2px] bg-rose-500 inline-block"></span>
-                        Červená karta
-                    </button>
-                </div>
             </div>
         </div>
 
@@ -602,7 +585,7 @@ html,body{overscroll-behavior:none}
 <div id="lbB" onpointerdown="lbTap('B')" class="flex-1 min-w-0 flex flex-col items-center justify-center transition-colors duration-150"><div id="lbNameB" class="text-sm font-semibold text-white/60 truncate max-w-full px-4 mb-1"></div><div id="lbScoreB" class="font-black text-white tabular-nums leading-none" style="font-size:min(58vh,32vw)">0</div></div>
 </div>
 <div class="absolute top-0 inset-x-0 flex items-center justify-between pt-2 pointer-events-none" style="padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))"><span id="lbMeta" class="text-[11px] font-bold text-emerald-400"></span><button onclick="closeLiveBoard()" class="pointer-events-auto w-9 h-9 rounded-full bg-white/10 text-white text-sm">✕</button></div>
-<div class="absolute bottom-0 inset-x-0 flex items-center justify-between gap-3 pb-3 pointer-events-none" style="padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))"><select id="lbPlayer" class="pointer-events-auto bg-[#222227] text-white text-xs rounded-lg border border-white/10 px-2 py-2 max-w-[38%]"></select><span class="text-[10px] text-white/35 text-center">Ťuk = gól • dvojitý ťuk = odvolať</span><button id="lbFinish" onclick="toggleFinish()" class="pointer-events-auto bg-white text-black text-xs font-bold rounded-lg px-3 py-2 shrink-0">Ukončiť zápas</button></div>
+<div class="absolute bottom-0 inset-x-0 flex items-center justify-between gap-3 pb-3 pointer-events-none" style="padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))"><span class="w-28 shrink-0"></span><span class="text-[10px] text-white/35 text-center">Ťuk = gól • dvojitý ťuk = odvolať</span><button id="lbFinish" onclick="toggleFinish()" class="pointer-events-auto bg-white text-black text-xs font-bold rounded-lg px-3 py-2 shrink-0">Ukončiť zápas</button></div>
 </div>
 <!-- BOTTOM NAVIGATION BAR -->
         <div class="absolute bottom-0 left-0 right-0 bg-[#0D0D0F]/95 backdrop-blur-md hairline-t pt-2 pb-5 px-3 z-20">
@@ -770,15 +753,11 @@ function fillModal(){const m=S.m.find(x=>x.id===cur);$('modalMatchMeta').textCon
  $('finishBtn').textContent=m.st==='FIN'?'Znovu otvoriť zápas':'Ukončiť zápas';renderBoard()}
 function openMatchModal(id){const m=S.m.find(x=>x.id===id);if(!m||m.st==='BYE')return;if(m.a==null||m.b==null)return toast('Zápas ešte nemá obe strany');
  if(m.st==='UP')m.st='LIVE';cur=id;fillModal();
- const ps=S.players.filter(p=>p.team===m.a||p.team===m.b);
- $('modalPlayerSelect').innerHTML=ps.length?ps.map(p=>`<option value="${p.id}">${esc(p.name)} (${pteam(p)})</option>`).join(''):'<option value="">Žiadni hráči</option>';
- $('lbPlayer').innerHTML='<option value="">Bez strelca</option>'+ps.map(p=>`<option value="${p.id}">${esc(p.name)}</option>`).join('');renderAll();sheet('matchModalBackdrop','matchModalSheet',1);modalOpen=true;syncBoard()}
+ renderAll();sheet('matchModalBackdrop','matchModalSheet',1);modalOpen=true;syncBoard()}
 function closeMatchModal(){sheet('matchModalBackdrop','matchModalSheet',0);modalOpen=false;syncBoard()}
 function addGoalToMatch(side,d=1,pid){const m=S.m.find(x=>x.id===cur);if(!m)return;if(m.st==='FIN')return toast('Zápas je ukončený – znovu ho otvor');
  const k=side==='A'?'sa':'sb';m[k]=Math.max(0,m[k]+d);
- const p=S.players.find(x=>x.id===+(pid===undefined?$('modalPlayerSelect').value:pid));if(p)p.goals=Math.max(0,p.goals+d);
- fillModal();renderAll();lbOn||toast(d>0?'GÓL! '+(p?p.name:'')+' (+1)':'Gól odobratý')}
-function assignCardToSelected(type){const p=S.players.find(x=>x.id===+$('modalPlayerSelect').value);if(!p)return;p.cards++;renderAll();toast((type==='yellow'?'Žltá karta: ':'Červená karta: ')+p.name)}
+ fillModal();renderAll();lbOn||toast(d>0?'GÓL! (+1)':'Gól odobratý')}
 function toggleFinish(){const m=S.m.find(x=>x.id===cur);if(!m)return;
  if(m.st==='FIN')m.st='LIVE';
  else{if(m.ko&&m.sa===m.sb)return toast(S.rules.pen?'Remíza – pridaj gól po penaltách':'V play-off nie je remíza');m.st='FIN';closeMatchModal()}
@@ -934,13 +913,13 @@ function renderBoard(){const m=S.m.find(x=>x.id===cur);if(!m||!S.teams[m.a]||!S.
 function syncBoard(){const on=modalOpen&&LS.matches&&!!S.m.find(x=>x.id===cur);lbOn=on;$('liveBoard').classList.toggle('hidden',!on);if(on)renderBoard()}
 function lbFlash(side,c){const el=$('lb'+side);el.style.background=c;setTimeout(()=>{el.style.background=''},160)}
 function lbTap(side){const m=S.m.find(x=>x.id===cur);if(!m)return;if(m.st==='FIN')return toast('Zápas je ukončený – znovu ho otvor');
- const n=Date.now(),pid=+$('lbPlayer').value||0;
+ const n=Date.now(),pid=0;
  if(n-lbT[side]<380){lbT[side]=0;addGoalToMatch(side,-2,pid);lbFlash(side,'rgba(244,63,94,.22)')}
  else{lbT[side]=n;addGoalToMatch(side,1,pid);lbFlash(side,'rgba(16,185,129,.22)')}
  if(navigator.vibrate)navigator.vibrate(12)}
 function closeLiveBoard(){closeMatchModal()}
 try{if(LS.addEventListener)LS.addEventListener('change',syncBoard);else if(LS.addListener)LS.addListener(syncBoard)}catch(e){}
-['setTournamentFormat','setGroups','setAdv','applyRules','generateBalancedTeams','setGenTeamCount','renameTeam','createScheduleFromTeams','openMatchModal','addGoalToMatch','assignCardToSelected','toggleFinish','openAddPlayerModal','confirmAddPlayer','delPlayer','setPTeam','setRating','adjustPlayerStat','setMatchDuration','adjustRule','togglePenalties','resetData','renameTournament','setCap','drawOrder','setTIcon','applyOrder','openEditPlayer','savePlayerName'].forEach(n=>{const f=globalThis[n];globalThis[n]=function(){if(S.locked){toast('Turnaj je zamknutý 🔒');renderAll();return}return f.apply(this,arguments)}});
+['setTournamentFormat','setGroups','setAdv','applyRules','generateBalancedTeams','setGenTeamCount','renameTeam','createScheduleFromTeams','openMatchModal','addGoalToMatch','toggleFinish','openAddPlayerModal','confirmAddPlayer','delPlayer','setPTeam','setRating','adjustPlayerStat','setMatchDuration','adjustRule','togglePenalties','resetData','renameTournament','setCap','drawOrder','setTIcon','applyOrder','openEditPlayer','savePlayerName'].forEach(n=>{const f=globalThis[n];globalThis[n]=function(){if(S.locked){toast('Turnaj je zamknutý 🔒');renderAll();return}return f.apply(this,arguments)}});
 function fitScroll(){try{const v=$('mainViewport'),nav=$('nav-tournaments').parentNode.parentNode.offsetHeight||0,k=[...v.children].filter(c=>c.offsetHeight>0),l=k[k.length-1];
  if(!l||!nav||v.clientHeight<150){v.style.overflowY='auto';return}const cb=l.getBoundingClientRect().bottom-v.getBoundingClientRect().top+v.scrollTop,need=cb>v.clientHeight-nav-12;
  v.style.overflowY=need?'auto':'hidden';if(!need)v.scrollTop=0}catch(e){}}
